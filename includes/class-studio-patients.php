@@ -150,6 +150,8 @@ class Studio_Patients {
         $cap = sanitize_text_field($_POST['cap_residenza']);
         $provincia = strtoupper(sanitize_text_field($_POST['provincia_residenza']));
         $note = sanitize_textarea_field($_POST['note']);
+        if (!self::is_valid_cf($cf)) wp_die(__('Codice fiscale non valido.','studio-professionale'));
+        if ($wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s AND id<>%d",$cf,$patient_id))) wp_die(__('Codice fiscale già presente.','studio-professionale'));
 
         $data = array(
             'nome'               => $nome,
@@ -165,7 +167,11 @@ class Studio_Patients {
             'citta_residenza'    => $citta,
             'cap_residenza'      => $cap,
             'provincia_residenza'=> $provincia,
-            'note'               => $note
+            'note'               => $note,
+            'is_minore'=>!empty($_POST['is_minore'])?1:0,
+            'tutore_nome'=>sanitize_text_field($_POST['tutore_nome']??''),
+            'tutore_cf'=>strtoupper(sanitize_text_field($_POST['tutore_cf']??'')),
+            'campi_personalizzati'=>sanitize_textarea_field($_POST['campi_personalizzati']??'')
         );
 
         if (!empty($data_nascita)) {
@@ -208,6 +214,7 @@ class Studio_Patients {
         check_admin_referer('studio_delete_patient_' . $id);
 
         global $wpdb;
+        if ((int)$wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM '.Studio_DB::table('fatture').' WHERE paziente_id=%d',$id))>0) wp_die(__('Paziente non eliminabile: esistono fatture collegate.','studio-professionale'));
         $wpdb->delete(Studio_DB::table('pazienti'), array('id' => $id));
         $wpdb->delete(Studio_DB::table('visite'), array('paziente_id' => $id));
 
@@ -270,7 +277,8 @@ class Studio_Patients {
                 $cf = strtoupper(sanitize_text_field(str_replace(' ', '', $row_data['cf'])));
             }
 
-            if (empty($nome) || empty($cognome)) {
+            if (!empty($cf) && (!self::is_valid_cf($cf) || $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s",$cf)))) { $errors[] = "Riga $row_idx: CF non valido o duplicato."; continue; }
+                        if (empty($nome) || empty($cognome)) {
                 $errors[] = "Riga $row_idx: Nome o cognome mancante.";
                 continue;
             }
@@ -361,6 +369,8 @@ class Studio_Patients {
             wp_send_json_error(array('message' => 'Impossibile estrarre data o sesso dal codice fiscale inserito.'));
         }
     }
+
+    public static function is_valid_cf($cf) { $cf=strtoupper(trim($cf)); if(!preg_match('/^[A-Z0-9]{16}$/',$cf))return false; $o=array('0'=>1,'1'=>0,'2'=>5,'3'=>7,'4'=>9,'5'=>13,'6'=>15,'7'=>17,'8'=>19,'9'=>21,'A'=>1,'B'=>0,'C'=>5,'D'=>7,'E'=>9,'F'=>13,'G'=>15,'H'=>17,'I'=>19,'J'=>21,'K'=>2,'L'=>4,'M'=>18,'N'=>20,'O'=>11,'P'=>3,'Q'=>6,'R'=>8,'S'=>12,'T'=>14,'U'=>16,'V'=>10,'W'=>22,'X'=>25,'Y'=>24,'Z'=>23); $sum=0; for($i=0;$i<15;$i++){ $c=$cf[$i]; $sum+=($i%2===0)?$o[$c]:(ctype_digit($c)?intval($c):ord($c)-65); } return chr(65+$sum%26)===$cf[15]; }
 
     public static function calculate_from_cf($cf) {
         $cf = strtoupper(trim($cf));

@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class Studio_Activator {
 
-    const DB_VERSION = '1.0.2';
+    const DB_VERSION = '2.0.0';
 
     public static function activate() {
         self::create_tables();
@@ -58,6 +58,10 @@ class Studio_Activator {
             provincia_residenza varchar(5) DEFAULT '',
             anamnesi longtext,
             note text,
+            is_minore tinyint(1) DEFAULT 0,
+            tutore_nome varchar(150) DEFAULT '',
+            tutore_cf varchar(16) DEFAULT '',
+            campi_personalizzati longtext,
             data_creazione datetime DEFAULT NULL,
             data_aggiornamento datetime DEFAULT NULL,
             PRIMARY KEY  (id),
@@ -89,6 +93,7 @@ class Studio_Activator {
             codice_fattura varchar(50) DEFAULT '',
             paziente_id bigint(20) unsigned NOT NULL,
             stato varchar(20) NOT NULL DEFAULT 'bozza',
+            tipo_documento varchar(30) NOT NULL DEFAULT 'sanitaria',
             data_documento date NOT NULL,
             valuta varchar(3) DEFAULT 'EUR',
             totale_imponibile decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -137,6 +142,12 @@ class Studio_Activator {
             PRIMARY KEY  (chiave)
         ) $charset_collate;";
 
+
+        $table_log = $wpdb->prefix . 'studio_log';
+        $sql_log = "CREATE TABLE $table_log (id bigint(20) unsigned NOT NULL AUTO_INCREMENT, paziente_id bigint(20) unsigned, fattura_id bigint(20) unsigned, user_id bigint(20) unsigned, tipo varchar(60) NOT NULL, dettagli longtext, data_evento datetime NOT NULL, PRIMARY KEY (id), KEY paziente_id (paziente_id)) $charset_collate;";
+        $table_appuntamenti = $wpdb->prefix . 'studio_appuntamenti';
+        $sql_appuntamenti = "CREATE TABLE $table_appuntamenti (id bigint(20) unsigned NOT NULL AUTO_INCREMENT, paziente_id bigint(20) unsigned NOT NULL, inizio datetime NOT NULL, fine datetime NOT NULL, titolo varchar(200) NOT NULL, note text, google_event_id varchar(255) DEFAULT '', promemoria_inviato tinyint(1) DEFAULT 0, data_creazione datetime NOT NULL, PRIMARY KEY (id), KEY inizio (inizio)) $charset_collate;";
+
         $errors = array();
 
         // 1. Eseguiamo con dbDelta
@@ -146,6 +157,8 @@ class Studio_Activator {
         dbDelta($sql_fatture);
         dbDelta($sql_righe);
         dbDelta($sql_impostazioni);
+        dbDelta($sql_log);
+        dbDelta($sql_appuntamenti);
 
         // 2. Fallback diretto con CREATE TABLE IF NOT EXISTS per MySQL 5.0+
         $tables = array(
@@ -153,6 +166,8 @@ class Studio_Activator {
             'visite'       => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_visite),
             'fatture'      => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_fatture),
             'fatture_righe'=> str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_righe),
+            'log'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_log),
+            'appuntamenti'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_appuntamenti),
             'impostazioni' => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_impostazioni),
         );
 

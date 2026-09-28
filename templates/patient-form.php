@@ -69,7 +69,7 @@ $is_edit = !empty($patient);
             <h2>Recapiti e Residenza</h2>
             <div class="studio-form-grid">
                 <div class="studio-field">
-                    <label>Cellulare / Telefono *</label>
+                    <label>Cellulare / Telefono</label>
                     <input type="text" name="telefono" value="<?php echo $is_edit ? esc_attr($patient->telefono) : ''; ?>" required>
                 </div>
                 <div class="studio-field">

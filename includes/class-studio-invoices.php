@@ -154,6 +154,7 @@ class Studio_Invoices {
         $paziente_id = intval($_POST['paziente_id']);
         $data_documento = sanitize_text_field($_POST['data_documento']);
         $valuta = 'EUR';
+        $tipo_documento = in_array($_POST['tipo_documento']??'sanitaria',array('sanitaria','non_sanitaria','preventivo','nota_credito'),true)?sanitize_key($_POST['tipo_documento']):'sanitaria';
         $metodo_pagamento = sanitize_text_field($_POST['metodo_pagamento']);
         $data_pagamento = !empty($_POST['data_pagamento']) ? sanitize_text_field($_POST['data_pagamento']) : null;
         $stato_pagamento = !empty($data_pagamento) ? 'pagata' : 'da_pagare';
@@ -231,6 +232,7 @@ class Studio_Invoices {
         $invoice_data = array(
             'paziente_id'          => $paziente_id,
             'stato'                => 'bozza',
+            'tipo_documento'       => $tipo_documento,
             'data_documento'       => $data_documento,
             'valuta'               => $valuta,
             'totale_imponibile'    => $totale_imponibile,

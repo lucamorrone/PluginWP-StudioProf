@@ -54,6 +54,7 @@ $is_locked = ($is_edit && $invoice->stato === 'emessa');
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="studio-field"><label>Tipo documento</label><select name="tipo_documento" <?php disabled($is_locked);?>><option value="sanitaria" <?php selected($invoice->tipo_documento??'sanitaria','sanitaria');?>>Fattura sanitaria</option><option value="non_sanitaria" <?php selected($invoice->tipo_documento??'','non_sanitaria');?>>Fattura non sanitaria</option><option value="preventivo">Preventivo</option><option value="nota_credito">Nota di credito</option></select></div>
                 <div class="studio-field">
                     <label>Data Documento *</label>
                     <input type="date" name="data_documento" value="<?php echo $is_edit ? esc_attr($invoice->data_documento) : date('Y-m-d'); ?>" required <?php disabled($is_locked); ?>>

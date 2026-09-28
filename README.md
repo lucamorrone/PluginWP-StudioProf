@@ -99,3 +99,18 @@ studio-professionale-wp/
   - **File CSV / Excel:** Dati completi di tutte le fatture emesse con imponibile, cassa, bolli, data incasso e dati anagrafici completi dei pazienti (per compilazione dichiarazione e modello 730/Redditi/Tessera Sanitaria).
   - **Pacchetto ZIP:** Archivio contenente sia il CSV riepilogativo sia tutte le copie dei documenti di spesa sanitaria emessi nel periodo.
   - **Report Fiscale di Riepilogo:** Riepilogo stampabile da allegare al fascicolo contabile.
+
+## Versione 2.0
+- PDF reali senza Composer, compatibile con hosting condiviso Aruba.
+- Invio tramite `wp_mail()`, compatibile con FluentSMTP e Gmail.
+- Agenda con sincronizzazione Google Calendar OAuth 2.0.
+- Log invii fatture, controllo CF, duplicati, paginazione e tipi documento.
+
+### Configurazione Google Calendar
+1. Creare un progetto in Google Cloud e abilitare Google Calendar API.
+2. Creare credenziali OAuth 2.0 di tipo Applicazione web.
+3. In WordPress aprire Studio > Agenda, copiare l'URI di reindirizzamento e registrarlo nelle credenziali Google.
+4. Inserire Client ID e Client Secret, salvare e selezionare Collega Google Calendar.
+
+### Email Gmail
+Installare FluentSMTP, configurare la connessione Google/Gmail e verificare l'invio dalla pagina di test di FluentSMTP. Il plugin usa esclusivamente `wp_mail()`.
