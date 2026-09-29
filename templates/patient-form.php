@@ -10,10 +10,11 @@ $is_edit = !empty($patient);
         </div>
         <div class="studio-actions">
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti')); ?>" class="btn-studio btn-studio-secondary">&larr; Torna all'elenco</a>
+            <button type="submit" form="studio-patient-form" class="btn-studio btn-studio-primary">Salva modifiche paziente</button>
         </div>
     </div>
 
-    <form method="post" action="">
+    <form method="post" action="" id="studio-patient-form">
         <?php wp_nonce_field('studio_save_patient', 'studio_save_patient_nonce'); ?>
         <input type="hidden" name="patient_id" value="<?php echo $is_edit ? esc_attr($patient->id) : 0; ?>">
 
@@ -69,12 +70,12 @@ $is_edit = !empty($patient);
             <h2>Recapiti e Residenza</h2>
             <div class="studio-form-grid">
                 <div class="studio-field">
-                    <label>Cellulare / Telefono</label>
-                    <input type="text" name="telefono" value="<?php echo $is_edit ? esc_attr($patient->telefono) : ''; ?>" required>
+                    <label>Cellulare / Telefono *</label>
+                    <input type="tel" name="telefono" pattern="[+0-9][0-9 .()\/-]{5,24}" value="<?php echo $is_edit ? esc_attr($patient->telefono) : ''; ?>" required>
                 </div>
                 <div class="studio-field">
                     <label>Email (per invio fatture e consensi)</label>
-                    <input type="email" name="email" value="<?php echo $is_edit ? esc_attr($patient->email) : ''; ?>">
+                    <input type="email" name="email" required value="<?php echo $is_edit ? esc_attr($patient->email) : ''; ?>">
                 </div>
             </div>
 

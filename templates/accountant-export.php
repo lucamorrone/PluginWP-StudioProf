@@ -11,7 +11,8 @@ if (!defined('ABSPATH')) exit;
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
         <!-- Card 1: Esportazione Dati / File -->
-        <div class="studio-panel">
+        <div class="studio-panel"><h2>Email commercialista</h2><form method="post"><?php wp_nonce_field('studio_export_accountant');?><input type="email" name="commercialista_email" value="<?php echo esc_attr(Studio_DB::get_setting('studio_commercialista_email'));?>" class="regular-text" placeholder="commercialista@example.com" required> <?php if(current_user_can(Studio_Roles::CAP_MANAGE_STUDIO)):?><button class="button" name="studio_accountant_email_save">Salva email</button><?php endif;?></form></div>
+<div class="studio-panel">
             <h2>Parametri di Esportazione</h2>
             
             <form method="post" action="">
@@ -81,6 +82,7 @@ if (!defined('ABSPATH')) exit;
                     <button type="submit" formtarget="_blank" name="studio_export_accountant_summary" class="btn-studio btn-studio-secondary" style="padding: 10px 16px;">
                         &#128462; Genera Report Stampabile di Riepilogo Periodico
                     </button>
+                    <button type="submit" name="studio_export_accountant_email" class="btn-studio btn-studio-success" style="padding:10px 16px;">Genera report e invia al commercialista</button>
                 </div>
             </form>
         </div>
@@ -107,4 +109,5 @@ if (!defined('ABSPATH')) exit;
             </div>
         </div>
     </div>
+<div class="studio-panel"><h2>Log invii al commercialista</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Operatore</th><th>Destinatario</th><th>Periodo</th><th>Fatture</th><th>Oggetto</th></tr></thead><tbody><?php if($commercialista_logs):foreach($commercialista_logs as $l):$d=json_decode($l->dettagli,true);?><tr><td><?php echo esc_html(date_i18n('d/m/Y H:i',strtotime($l->data_evento)));?></td><td><?php echo esc_html($l->display_name);?></td><td><?php echo esc_html($d['destinatario']??'');?></td><td><?php echo esc_html($d['periodo']??'');?></td><td><?php echo esc_html($d['fatture']??'');?></td><td><?php echo esc_html($d['oggetto']??'');?></td></tr><?php endforeach;else:?><tr><td colspan="6">Nessun invio registrato.</td></tr><?php endif;?></tbody></table></div>
 </div>

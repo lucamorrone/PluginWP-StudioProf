@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class Studio_Activator {
 
-    const DB_VERSION = '2.0.0';
+    const DB_VERSION = '2.2.1';
 
     public static function activate() {
         self::create_tables();
@@ -58,10 +58,9 @@ class Studio_Activator {
             provincia_residenza varchar(5) DEFAULT '',
             anamnesi longtext,
             note text,
-            is_minore tinyint(1) DEFAULT 0,
-            tutore_nome varchar(150) DEFAULT '',
-            tutore_cf varchar(16) DEFAULT '',
-            campi_personalizzati longtext,
+            consenso_privacy_generato tinyint(1) DEFAULT 0,
+            consenso_privacy_data datetime DEFAULT NULL,
+            consenso_privacy_utente bigint(20) unsigned DEFAULT NULL,
             data_creazione datetime DEFAULT NULL,
             data_aggiornamento datetime DEFAULT NULL,
             PRIMARY KEY  (id),
@@ -143,10 +142,12 @@ class Studio_Activator {
         ) $charset_collate;";
 
 
+        $table_documenti = $wpdb->prefix . 'studio_documenti';
+        $sql_documenti = "CREATE TABLE $table_documenti (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,paziente_id bigint(20) unsigned NOT NULL,nome_file varchar(255) NOT NULL,percorso varchar(500) NOT NULL,mime varchar(100) DEFAULT 'application/pdf',descrizione varchar(255) DEFAULT '',caricato_da bigint(20) unsigned DEFAULT NULL,data_caricamento datetime NOT NULL,PRIMARY KEY (id),KEY paziente_id (paziente_id)) $charset_collate;";
         $table_log = $wpdb->prefix . 'studio_log';
-        $sql_log = "CREATE TABLE $table_log (id bigint(20) unsigned NOT NULL AUTO_INCREMENT, paziente_id bigint(20) unsigned, fattura_id bigint(20) unsigned, user_id bigint(20) unsigned, tipo varchar(60) NOT NULL, dettagli longtext, data_evento datetime NOT NULL, PRIMARY KEY (id), KEY paziente_id (paziente_id)) $charset_collate;";
-        $table_appuntamenti = $wpdb->prefix . 'studio_appuntamenti';
-        $sql_appuntamenti = "CREATE TABLE $table_appuntamenti (id bigint(20) unsigned NOT NULL AUTO_INCREMENT, paziente_id bigint(20) unsigned NOT NULL, inizio datetime NOT NULL, fine datetime NOT NULL, titolo varchar(200) NOT NULL, note text, google_event_id varchar(255) DEFAULT '', promemoria_inviato tinyint(1) DEFAULT 0, data_creazione datetime NOT NULL, PRIMARY KEY (id), KEY inizio (inizio)) $charset_collate;";
+        $sql_log = "CREATE TABLE $table_log (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,paziente_id bigint(20) unsigned DEFAULT NULL,fattura_id bigint(20) unsigned DEFAULT NULL,user_id bigint(20) unsigned DEFAULT NULL,tipo varchar(60) NOT NULL,dettagli longtext,data_evento datetime NOT NULL,PRIMARY KEY (id),KEY paziente_id (paziente_id),KEY fattura_id (fattura_id),KEY data_evento (data_evento)) $charset_collate;";
+        $table_audit = $wpdb->prefix . 'studio_audit';
+        $sql_audit = "CREATE TABLE $table_audit (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,user_id bigint(20) unsigned DEFAULT NULL,azione varchar(80) NOT NULL,oggetto varchar(80) DEFAULT '',oggetto_id bigint(20) unsigned DEFAULT NULL,dettagli longtext,ip_hash varchar(64) DEFAULT '',data_evento datetime NOT NULL,PRIMARY KEY (id),KEY oggetto_id (oggetto_id),KEY data_evento (data_evento)) $charset_collate;";
 
         $errors = array();
 
@@ -157,8 +158,9 @@ class Studio_Activator {
         dbDelta($sql_fatture);
         dbDelta($sql_righe);
         dbDelta($sql_impostazioni);
+        dbDelta($sql_documenti);
         dbDelta($sql_log);
-        dbDelta($sql_appuntamenti);
+        dbDelta($sql_audit);
 
         // 2. Fallback diretto con CREATE TABLE IF NOT EXISTS per MySQL 5.0+
         $tables = array(
@@ -166,8 +168,9 @@ class Studio_Activator {
             'visite'       => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_visite),
             'fatture'      => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_fatture),
             'fatture_righe'=> str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_righe),
+            'documenti'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_documenti),
             'log'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_log),
-            'appuntamenti'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_appuntamenti),
+            'audit'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_audit),
             'impostazioni' => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_impostazioni),
         );
 

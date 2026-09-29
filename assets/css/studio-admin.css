@@ -285,3 +285,4 @@
 .studio-tab-content.active {
     display: block;
 }
+.studio-year-filter{display:flex;align-items:center;gap:8px;margin-left:auto}.studio-year-filter select{min-width:100px}.tablenav-pages{margin:16px 0}.tablenav-pages .page-numbers{display:inline-block;padding:6px 10px;border:1px solid #cbd5e1;background:#fff;text-decoration:none}.tablenav-pages .current{background:#2563eb;color:#fff}

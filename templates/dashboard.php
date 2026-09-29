@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) exit;
             <h1>Dashboard Studio Professionale</h1>
             <p class="description">Panoramica dell'attività dello studio, pazienti registrati e stato della fatturazione.</p>
         </div>
+        <form method="get" class="studio-year-filter"><input type="hidden" name="page" value="studio-professionale"><label for="dashboard_anno"><strong>Anno:</strong></label><select id="dashboard_anno" name="dashboard_anno" onchange="this.form.submit()"><?php foreach($anni_dashboard as $year_option):?><option value="<?php echo (int)$year_option;?>" <?php selected($anno_corrente,$year_option);?>><?php echo (int)$year_option;?></option><?php endforeach;?></select></form>
         <div class="studio-actions">
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=new')); ?>" class="btn-studio btn-studio-primary">+ Nuovo Paziente</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=new')); ?>" class="btn-studio btn-studio-success">+ Nuova Fattura</a>
@@ -28,7 +29,7 @@ if (!defined('ABSPATH')) exit;
             <div class="value"><?php echo number_format($incasso_anno, 2, ',', '.'); ?> &euro;</div>
         </div>
         <div class="studio-card-stat warning">
-            <div class="title">Da Incassare (Sospesi)</div>
+            <div class="title">Da Incassare Anno <?php echo (int)$anno_corrente; ?></div>
             <div class="value"><?php echo number_format($da_incassare, 2, ',', '.'); ?> &euro;</div>
         </div>
     </div>

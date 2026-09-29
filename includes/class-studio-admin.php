@@ -165,16 +165,17 @@ class Studio_Admin {
         $t_visite = Studio_DB::table('visite');
 
         $tot_pazienti = (int) $wpdb->get_var("SELECT COUNT(*) FROM $t_pazienti");
-        $tot_fatture = (int) $wpdb->get_var("SELECT COUNT(*) FROM $t_fatture WHERE stato != 'annullata'");
-        
-        $anno_corrente = date('Y');
+        $anno_corrente = isset($_GET['dashboard_anno']) ? intval($_GET['dashboard_anno']) : intval(date('Y'));
+        $anni_dashboard = $wpdb->get_col("SELECT DISTINCT anno FROM $t_fatture WHERE anno IS NOT NULL AND anno > 0 ORDER BY anno DESC");
+        if (empty($anni_dashboard)) $anni_dashboard = array(intval(date('Y')));
+        $tot_fatture = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $t_fatture WHERE stato != 'annullata' AND ((anno = %d) OR (anno IS NULL AND YEAR(data_documento) = %d))",$anno_corrente,$anno_corrente));
         $incasso_anno = (float) $wpdb->get_var($wpdb->prepare(
             "SELECT SUM(totale_documento) FROM $t_fatture WHERE stato = 'emessa' AND stato_pagamento = 'pagata' AND anno = %d",
             $anno_corrente
         ));
         
         $da_incassare = (float) $wpdb->get_var(
-            "SELECT SUM(totale_documento) FROM $t_fatture WHERE stato = 'emessa' AND stato_pagamento = 'da_pagare'"
+            "SELECT SUM(totale_documento) FROM $t_fatture WHERE stato = 'emessa' AND stato_pagamento = 'da_pagare' AND anno = " . intval($anno_corrente)
         );
 
         $ultime_fatture = $wpdb->get_results(

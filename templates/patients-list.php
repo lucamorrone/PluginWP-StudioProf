@@ -84,4 +84,4 @@ if ($notice) {
     </div>
 </div>
 
-<?php if($total>$per_page):?><div class="tablenav-pages"><?php echo wp_kses_post(paginate_links(array('base'=>add_query_arg('paged','%#%'),'current'=>$page,'total'=>ceil($total/$per_page))));?></div><?php endif;?>
+<?php if($total>$per_page):?><div class="tablenav-pages"><?php echo wp_kses_post(paginate_links(array('base'=>add_query_arg('paged','%#%'),'current'=>$page,'total'=>ceil($total/$per_page),'prev_text'=>'&laquo;','next_text'=>'&raquo;')));?></div><?php endif;?>

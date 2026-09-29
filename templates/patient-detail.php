@@ -13,8 +13,10 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
             <a href="<?php echo esc_url($privacy_url); ?>" target="_blank" class="btn-studio btn-studio-secondary">&#128462; Consenso Privacy PDF</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=new&patient_id=' . $patient->id)); ?>" class="btn-studio btn-studio-success">+ Nuova Fattura</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=edit&id=' . $patient->id)); ?>" class="btn-studio btn-studio-primary">&#9998; Modifica Anagrafica</a>
+            <?php if(current_user_can(Studio_Roles::CAP_MANAGE_STUDIO) && $issued_invoice_count===0):?><a href="<?php echo esc_url($delete_url);?>" class="btn-studio btn-studio-danger" onclick="return confirm('Eliminare definitivamente il paziente e le eventuali bozze collegate?')">Elimina paziente</a><?php endif;?>
         </div>
     </div>
+    <div class="notice notice-info inline"><p><strong>Consenso privacy:</strong> <?php if(!empty($patient->consenso_privacy_generato)): ?>generato il <?php echo esc_html(date_i18n('d/m/Y H:i',strtotime($patient->consenso_privacy_data))); ?><?php else: ?>non ancora generato<?php endif; ?></p></div>
 
     <!-- Dati Anagrafici Card -->
     <div class="studio-panel" style="background: #f8fafc;">
@@ -47,13 +49,13 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
 
     <!-- Scheda a Tab -->
     <div class="studio-tabs">
-        <button class="studio-tab-btn active" data-tab="tab-anamnesi">&#128221; Anamnesi Clinica</button>
-        <button class="studio-tab-btn" data-tab="tab-visite">&#128197; Storico Visite / Sedute (<?php echo count($visite); ?>)</button>
-        <button class="studio-tab-btn" data-tab="tab-contabilita">&#128179; Contabilità & Fatture (<?php echo count($fatture); ?>)</button>
+        <?php if($can_view_clinical): ?><button class="studio-tab-btn active" data-tab="tab-anamnesi">&#128221; Anamnesi Clinica</button><?php endif; ?>
+        <?php if($can_view_clinical): ?><button class="studio-tab-btn" data-tab="tab-visite">&#128197; Storico Visite / Sedute (<?php echo count($visite); ?>)</button><?php endif; ?>
+        <button class="studio-tab-btn <?php echo $can_view_clinical?'':'active'; ?>" data-tab="tab-contabilita">&#128179; Contabilità & Fatture (<?php echo count($fatture); ?>)</button>
     </div>
 
     <!-- TAB 1: ANAMNESI -->
-    <div class="studio-tab-content active" id="tab-anamnesi">
+    <?php if($can_view_clinical): ?><div class="studio-tab-content active" id="tab-anamnesi">
         <div class="studio-panel">
             <h2>Anamnesi e Storia Clinica del Paziente</h2>
             <p class="description">Spazio riservato per la formulazione del caso clinico, diagnosi, obiettivi terapeutici e note riservate protette da segreto professionale.</p>
@@ -69,6 +71,9 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
         </div>
     </div>
 
+    <?php endif; ?>
+
+    <?php if($can_view_clinical): ?>
     <!-- TAB 2: VISITE E COLLOQUI -->
     <div class="studio-tab-content" id="tab-visite">
         <div class="studio-panel">
@@ -132,8 +137,10 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
         </div>
     </div>
 
+    <?php endif; ?>
+
     <!-- TAB 3: CONTABILITA PAZIENTE -->
-    <div class="studio-tab-content" id="tab-contabilita">
+    <div class="studio-tab-content <?php echo $can_view_clinical?'':'active'; ?>" id="tab-contabilita">
         <div class="studio-grid-cards">
             <div class="studio-card-stat highlight">
                 <div class="title">Totale Fatturato Emesso</div>
@@ -201,4 +208,9 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
             </table>
         </div>
     </div>
+
+<?php if(current_user_can(Studio_Roles::CAP_MANAGE_DOCUMENTS)): ?>
+<div class="studio-panel"><h2>Documenti clinici PDF</h2><form method="post" enctype="multipart/form-data"><?php wp_nonce_field('studio_upload_document_'.$patient->id);?><input type="hidden" name="patient_id" value="<?php echo (int)$patient->id;?>"><input type="file" name="clinical_document" accept="application/pdf" required> <input name="document_description" placeholder="Descrizione documento"> <button class="button button-primary" name="studio_upload_document">Carica PDF</button></form><table class="widefat striped" style="margin-top:15px"><thead><tr><th>Documento</th><th>Descrizione</th><th>Data</th><th>Operatore</th><th>Azioni</th></tr></thead><tbody><?php foreach($documenti as $d):$down=wp_nonce_url(admin_url('admin.php?page=studio-pazienti&patient_id='.$patient->id.'&document_action=download&document_id='.$d->id),'studio_download_document_'.$d->id);$del=wp_nonce_url(admin_url('admin.php?page=studio-pazienti&patient_id='.$patient->id.'&document_action=delete&document_id='.$d->id),'studio_delete_document_'.$d->id);?><tr><td><?php echo esc_html($d->nome_file);?></td><td><?php echo esc_html($d->descrizione);?></td><td><?php echo esc_html(date_i18n('d/m/Y H:i',strtotime($d->data_caricamento)));?></td><td><?php echo esc_html($d->display_name);?></td><td><a class="button" href="<?php echo esc_url($down);?>">Scarica</a> <a class="button" href="<?php echo esc_url($del);?>" onclick="return confirm('Eliminare il documento?')">Elimina</a></td></tr><?php endforeach;?></tbody></table></div>
+<?php endif; ?>
+<div class="studio-panel"><h2>Storico comunicazioni e invii</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Tipo</th><th>Operatore</th><th>Dettagli</th></tr></thead><tbody><?php foreach($email_logs as $log):?><tr><td><?php echo esc_html(date_i18n('d/m/Y H:i',strtotime($log->data_evento)));?></td><td><?php echo esc_html($log->tipo);?></td><td><?php echo esc_html($log->display_name);?></td><td><?php $details=json_decode($log->dettagli,true);echo esc_html(is_array($details)?implode(' | ',array_map('strval',$details)):$log->dettagli);?></td></tr><?php endforeach;?></tbody></table></div>
 </div>

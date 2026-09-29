@@ -154,7 +154,7 @@ class Studio_Invoices {
         $paziente_id = intval($_POST['paziente_id']);
         $data_documento = sanitize_text_field($_POST['data_documento']);
         $valuta = 'EUR';
-        $tipo_documento = in_array($_POST['tipo_documento']??'sanitaria',array('sanitaria','non_sanitaria','preventivo','nota_credito'),true)?sanitize_key($_POST['tipo_documento']):'sanitaria';
+        $tipo_documento = isset($_POST['tipo_documento']) && $_POST['tipo_documento']==='non_sanitaria' ? 'non_sanitaria' : 'sanitaria';
         $metodo_pagamento = sanitize_text_field($_POST['metodo_pagamento']);
         $data_pagamento = !empty($_POST['data_pagamento']) ? sanitize_text_field($_POST['data_pagamento']) : null;
         $stato_pagamento = !empty($data_pagamento) ? 'pagata' : 'da_pagare';
@@ -351,12 +351,11 @@ class Studio_Invoices {
         $t_fatture = Studio_DB::table('fatture');
         $invoice = $wpdb->get_row($wpdb->prepare("SELECT * FROM $t_fatture WHERE id = %d", $id));
 
-        if ($invoice && $invoice->stato === 'emessa') {
-            wp_die(__('Non è possibile cancellare una fattura già emessa con numero progressivo. Utilizza una nota di credito o contrassegnala come annullata.', 'studio-professionale'));
-        }
+        if (!$invoice || $invoice->stato !== 'bozza' || !empty($invoice->numero_fattura)) { wp_die(__('È possibile eliminare esclusivamente una fattura non emessa nello stato Bozza.','studio-professionale')); }
 
         $wpdb->delete(Studio_DB::table('fatture_righe'), array('fattura_id' => $id));
         $wpdb->delete($t_fatture, array('id' => $id));
+        Studio_Security::audit('eliminazione_bozza_fattura','fattura',$id);
 
         wp_redirect(add_query_arg(array('page' => 'studio-fatture', 'msg' => 'deleted'), admin_url('admin.php')));
         exit;

@@ -56,6 +56,7 @@ class Studio_DB {
             'rivalsa_inps_perc'=> floatval(self::get_setting('studio_rivalsa_inps_perc', '0.00')),
             'ritenuta_perc'    => floatval(self::get_setting('studio_ritenuta_perc', '0.00')),
             'testo_privacy'    => self::get_setting('studio_testo_privacy', self::default_privacy_text()),
+            'commercialista_email'=> self::get_setting('studio_commercialista_email',''),
             'note_legali'      => self::get_setting('studio_note_legali', 'Operazione effettuata ai sensi dell\'art. 1, commi da 54 a 89 della Legge n. 190/2014 - Regime forfettario. Prestazione sanitaria esente IVA ex art. 10, n. 18, D.P.R. 633/72.'),
         );
     }
@@ -79,6 +80,7 @@ class Studio_DB {
             'fatture'       => self::table('fatture'),
             'fatture_righe' => self::table('fatture_righe'),
             'impostazioni'  => self::table('impostazioni'),
+            'documenti'=>self::table('documenti'),'log'=>self::table('log'),'audit'=>self::table('audit'),
         );
         $status = array();
         foreach ($tables as $key => $table_name) {

@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Studio Professionale - Gestione Pazienti & Fatturazione
- * Plugin URI: https://studio-professionale.local
+ * Plugin URI: https://github.com/lucamorrone/PluginWP-StudioProf
  * Description: Sistema avanzato per la gestione anagrafica pazienti, storico visite/anamnesi, fatturazione con calcolo automatico, pagamenti, esportazione commercialista e generazione PDF.
- * Version: 2.0.0
- * Author: Antigravity
+ * Version: 2.2.1
+ * Author: Luca Morrone, AI: Antigravity + Copilot
  * Text Domain: studio-professionale
  * Domain Path: /languages
  */
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Costanti del Plugin
-define('STUDIO_PROF_VERSION', '2.0.0');
+define('STUDIO_PROF_VERSION', '2.2.1');
 define('STUDIO_PROF_PATH', plugin_dir_path(__FILE__));
 define('STUDIO_PROF_URL', plugin_dir_url(__FILE__));
 define('STUDIO_PROF_BASENAME', plugin_basename(__FILE__));
@@ -28,7 +28,8 @@ require_once STUDIO_PROF_PATH . 'includes/class-studio-patients.php';
 require_once STUDIO_PROF_PATH . 'includes/class-studio-invoices.php';
 require_once STUDIO_PROF_PATH . 'includes/class-studio-pdf.php';
 require_once STUDIO_PROF_PATH . 'includes/class-studio-accountant.php';
-require_once STUDIO_PROF_PATH . 'includes/class-studio-google-calendar.php';
+require_once STUDIO_PROF_PATH . 'includes/class-studio-security.php';
+require_once STUDIO_PROF_PATH . 'includes/class-studio-documents.php';
 
 // Hook attivazione e disattivazione
 register_activation_hook(__FILE__, array('Studio_Activator', 'activate'));
@@ -42,6 +43,6 @@ function studio_prof_init() {
     Studio_Patients::get_instance();
     Studio_Invoices::get_instance();
     Studio_Accountant::get_instance();
-    Studio_Google_Calendar::get_instance();
+    Studio_Security::get_instance();
 }
 add_action('plugins_loaded', 'studio_prof_init');

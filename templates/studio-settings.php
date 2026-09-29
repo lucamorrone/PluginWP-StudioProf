@@ -109,6 +109,7 @@ $repair_url = wp_nonce_url(admin_url('admin.php?page=studio-impostazioni&action=
                     <label>Email Studio:</label>
                     <input type="email" name="studio_email" value="<?php echo esc_attr($studio['email']); ?>">
                 </div>
+                <div class="studio-field"><label>Email Commercialista:</label><input type="email" name="studio_commercialista_email" value="<?php echo esc_attr($studio['commercialista_email']); ?>"></div>
                 <div class="studio-field">
                     <label>PEC:</label>
                     <input type="email" name="studio_pec" value="<?php echo esc_attr($studio['pec']); ?>">

@@ -26,6 +26,7 @@ class Studio_Patients {
         add_action('admin_init', array($this, 'handle_patient_delete'));
         add_action('admin_init', array($this, 'handle_patient_csv_import'));
         add_action('admin_init', array($this, 'handle_privacy_pdf_download'));
+        add_action('admin_init', array($this, 'handle_clinical_documents'));
     }
 
     public function render_patients_page() {
@@ -98,6 +99,10 @@ class Studio_Patients {
             $patient_id
         ));
 
+        $documenti = current_user_can(Studio_Roles::CAP_MANAGE_DOCUMENTS) ? $wpdb->get_results($wpdb->prepare('SELECT d.*,u.display_name FROM '.Studio_DB::table('documenti').' d LEFT JOIN '.$wpdb->users.' u ON u.ID=d.caricato_da WHERE d.paziente_id=%d ORDER BY d.id DESC',$patient_id)) : array();
+        $email_logs = $wpdb->get_results($wpdb->prepare('SELECT l.*,u.display_name FROM '.Studio_DB::table('log').' l LEFT JOIN '.$wpdb->users.' u ON u.ID=l.user_id WHERE l.paziente_id=%d ORDER BY l.id DESC',$patient_id));
+        $can_view_clinical = current_user_can(Studio_Roles::CAP_VIEW_CLINICAL);
+        $issued_invoice_count=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_fatture WHERE paziente_id=%d AND stato='emessa'",$patient_id));
         // Riepilogo contabile
         $totale_fatturato = 0.00;
         $totale_pagato = 0.00;
@@ -150,8 +155,11 @@ class Studio_Patients {
         $cap = sanitize_text_field($_POST['cap_residenza']);
         $provincia = strtoupper(sanitize_text_field($_POST['provincia_residenza']));
         $note = sanitize_textarea_field($_POST['note']);
-        if (!self::is_valid_cf($cf)) wp_die(__('Codice fiscale non valido.','studio-professionale'));
-        if ($wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s AND id<>%d",$cf,$patient_id))) wp_die(__('Codice fiscale già presente.','studio-professionale'));
+        if (!self::is_valid_cf($cf)) wp_die(__('Codice fiscale non valido. Verificare tutti i 16 caratteri e il carattere di controllo.','studio-professionale'));
+        $duplicate_id=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s AND id<>%d LIMIT 1",$cf,$patient_id));
+        if($duplicate_id) wp_die(__('Esiste già un paziente con lo stesso Codice Fiscale.','studio-professionale'));
+        if(empty($telefono) || !preg_match('/^[+0-9][0-9 .()\/-]{5,24}$/',$telefono)) wp_die(__('Inserire un numero di telefono valido.','studio-professionale'));
+        if(empty($email) || !is_email($email)) wp_die(__('Inserire un indirizzo email valido.','studio-professionale'));
 
         $data = array(
             'nome'               => $nome,
@@ -167,11 +175,7 @@ class Studio_Patients {
             'citta_residenza'    => $citta,
             'cap_residenza'      => $cap,
             'provincia_residenza'=> $provincia,
-            'note'               => $note,
-            'is_minore'=>!empty($_POST['is_minore'])?1:0,
-            'tutore_nome'=>sanitize_text_field($_POST['tutore_nome']??''),
-            'tutore_cf'=>strtoupper(sanitize_text_field($_POST['tutore_cf']??'')),
-            'campi_personalizzati'=>sanitize_textarea_field($_POST['campi_personalizzati']??'')
+            'note'               => $note
         );
 
         if (!empty($data_nascita)) {
@@ -179,17 +183,20 @@ class Studio_Patients {
         }
 
         if ($patient_id > 0) {
+            $old_patient = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d",$patient_id),ARRAY_A);
             $data['data_aggiornamento'] = current_time('mysql');
             if (empty($data_nascita)) {
                 $wpdb->query($wpdb->prepare("UPDATE $table SET data_nascita = NULL WHERE id = %d", $patient_id));
             }
             $wpdb->update($table, $data, array('id' => $patient_id));
             $target_id = $patient_id;
+            Studio_Security::audit('modifica_anagrafica','paziente',$patient_id,array('prima'=>$old_patient,'dopo'=>$data));
         } else {
             $data['data_creazione'] = current_time('mysql');
             $data['data_aggiornamento'] = current_time('mysql');
             $wpdb->insert($table, $data);
             $target_id = $wpdb->insert_id;
+            Studio_Security::audit('creazione_anagrafica','paziente',$target_id,array('dati'=>$data));
         }
 
         wp_redirect(add_query_arg(array(
@@ -214,9 +221,15 @@ class Studio_Patients {
         check_admin_referer('studio_delete_patient_' . $id);
 
         global $wpdb;
-        if ((int)$wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM '.Studio_DB::table('fatture').' WHERE paziente_id=%d',$id))>0) wp_die(__('Paziente non eliminabile: esistono fatture collegate.','studio-professionale'));
-        $wpdb->delete(Studio_DB::table('pazienti'), array('id' => $id));
-        $wpdb->delete(Studio_DB::table('visite'), array('paziente_id' => $id));
+        $issued=(int)$wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM '.Studio_DB::table('fatture').' WHERE paziente_id=%d AND stato=%s',$id,'emessa'));
+        if($issued>0) wp_die(__('Impossibile eliminare il paziente: sono presenti fatture emesse.','studio-professionale'));
+        $draft_ids=$wpdb->get_col($wpdb->prepare('SELECT id FROM '.Studio_DB::table('fatture').' WHERE paziente_id=%d',$id));
+        foreach($draft_ids as $draft_id)$wpdb->delete(Studio_DB::table('fatture_righe'),array('fattura_id'=>$draft_id));
+        $wpdb->delete(Studio_DB::table('fatture'),array('paziente_id'=>$id));
+        $wpdb->delete(Studio_DB::table('visite'),array('paziente_id'=>$id));
+        $wpdb->delete(Studio_DB::table('documenti'),array('paziente_id'=>$id));
+        $wpdb->delete(Studio_DB::table('pazienti'),array('id'=>$id));
+        Studio_Security::audit('eliminazione_anagrafica','paziente',$id);
 
         wp_redirect(add_query_arg(array('page' => 'studio-pazienti', 'message' => 'deleted'), admin_url('admin.php')));
         exit;
@@ -277,8 +290,7 @@ class Studio_Patients {
                 $cf = strtoupper(sanitize_text_field(str_replace(' ', '', $row_data['cf'])));
             }
 
-            if (!empty($cf) && (!self::is_valid_cf($cf) || $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s",$cf)))) { $errors[] = "Riga $row_idx: CF non valido o duplicato."; continue; }
-                        if (empty($nome) || empty($cognome)) {
+            if (empty($nome) || empty($cognome)) {
                 $errors[] = "Riga $row_idx: Nome o cognome mancante.";
                 continue;
             }
@@ -346,8 +358,19 @@ class Studio_Patients {
         }
 
         $patient_id = intval($_GET['id']);
+        global $wpdb;
+        $wpdb->update(Studio_DB::table('pazienti'),array('consenso_privacy_generato'=>1,'consenso_privacy_data'=>current_time('mysql'),'consenso_privacy_utente'=>get_current_user_id()),array('id'=>$patient_id));
+        Studio_Security::audit('genera_consenso_privacy','paziente',$patient_id);
         Studio_PDF::output_privacy_pdf($patient_id);
         exit;
+    }
+
+    public function handle_clinical_documents(){
+        if (!isset($_GET['page']) || $_GET['page']!=='studio-pazienti') return;
+        $patient_id=intval($_REQUEST['patient_id']??0); if(!$patient_id)return;
+        if(isset($_POST['studio_upload_document'])) Studio_Documents::upload($patient_id);
+        if(isset($_GET['document_action'],$_GET['document_id'])){ $id=intval($_GET['document_id']); if($_GET['document_action']==='delete')Studio_Documents::delete($id,$patient_id); if($_GET['document_action']==='download')Studio_Documents::download($id,$patient_id); }
+        if(isset($_POST['studio_upload_document']) || isset($_GET['document_action'])){wp_safe_redirect(admin_url('admin.php?page=studio-pazienti&action=view&id='.$patient_id));exit;}
     }
 
     public function ajax_decode_cf() {
@@ -358,8 +381,8 @@ class Studio_Patients {
         }
 
         $cf = isset($_POST['cf']) ? strtoupper(sanitize_text_field(str_replace(' ', '', $_POST['cf']))) : '';
-        if (strlen($cf) !== 16) {
-            wp_send_json_error(array('message' => 'Codice fiscale incompleto o non valido (deve essere di 16 caratteri).'));
+        if (!self::is_valid_cf($cf)) {
+            wp_send_json_error(array('message' => 'Codice fiscale non valido.'));
         }
 
         $res = self::calculate_from_cf($cf);
@@ -370,8 +393,11 @@ class Studio_Patients {
         }
     }
 
-    public static function is_valid_cf($cf) { $cf=strtoupper(trim($cf)); if(!preg_match('/^[A-Z0-9]{16}$/',$cf))return false; $o=array('0'=>1,'1'=>0,'2'=>5,'3'=>7,'4'=>9,'5'=>13,'6'=>15,'7'=>17,'8'=>19,'9'=>21,'A'=>1,'B'=>0,'C'=>5,'D'=>7,'E'=>9,'F'=>13,'G'=>15,'H'=>17,'I'=>19,'J'=>21,'K'=>2,'L'=>4,'M'=>18,'N'=>20,'O'=>11,'P'=>3,'Q'=>6,'R'=>8,'S'=>12,'T'=>14,'U'=>16,'V'=>10,'W'=>22,'X'=>25,'Y'=>24,'Z'=>23); $sum=0; for($i=0;$i<15;$i++){ $c=$cf[$i]; $sum+=($i%2===0)?$o[$c]:(ctype_digit($c)?intval($c):ord($c)-65); } return chr(65+$sum%26)===$cf[15]; }
-
+    public static function is_valid_cf($cf){
+        $cf=strtoupper(trim($cf));if(!preg_match('/^[A-Z0-9]{16}$/',$cf))return false;
+        $odd=array('0'=>1,'1'=>0,'2'=>5,'3'=>7,'4'=>9,'5'=>13,'6'=>15,'7'=>17,'8'=>19,'9'=>21,'A'=>1,'B'=>0,'C'=>5,'D'=>7,'E'=>9,'F'=>13,'G'=>15,'H'=>17,'I'=>19,'J'=>21,'K'=>2,'L'=>4,'M'=>18,'N'=>20,'O'=>11,'P'=>3,'Q'=>6,'R'=>8,'S'=>12,'T'=>14,'U'=>16,'V'=>10,'W'=>22,'X'=>25,'Y'=>24,'Z'=>23);
+        $sum=0;for($i=0;$i<15;$i++){$c=$cf[$i];$sum+=($i%2===0)?$odd[$c]:(ctype_digit($c)?intval($c):ord($c)-65);}return chr(65+($sum%26))===$cf[15];
+    }
     public static function calculate_from_cf($cf) {
         $cf = strtoupper(trim($cf));
         if (strlen($cf) !== 16) {
@@ -445,12 +471,14 @@ class Studio_Patients {
         }
 
         global $wpdb;
+        $old_anamnesi=$wpdb->get_var($wpdb->prepare('SELECT anamnesi FROM '.Studio_DB::table('pazienti').' WHERE id=%d',$patient_id));
         $wpdb->update(
             Studio_DB::table('pazienti'),
             array('anamnesi' => $anamnesi),
             array('id' => $patient_id)
         );
 
+        Studio_Security::audit('modifica_anamnesi','paziente',$patient_id,array('prima'=>$old_anamnesi,'dopo'=>$anamnesi));
         wp_send_json_success(array('message' => 'Anamnesi aggiornata con successo!'));
     }
 
@@ -484,6 +512,7 @@ class Studio_Patients {
         ));
 
         $insert_id = $wpdb->insert_id;
+        Studio_Security::audit('aggiunta_visita','paziente',$patient_id,array('visita_id'=>$insert_id,'data'=>$data_visita,'tipo'=>$tipo));
 
         wp_send_json_success(array(
             'message' => 'Visita registrata con successo!',
@@ -510,7 +539,9 @@ class Studio_Patients {
         }
 
         global $wpdb;
+        $old=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.Studio_DB::table('visite').' WHERE id=%d',$id),ARRAY_A);
         $wpdb->delete(Studio_DB::table('visite'), array('id' => $id));
+        Studio_Security::audit('eliminazione_visita','visita',$id,array('prima'=>$old));
         wp_send_json_success(array('message' => 'Seduta eliminata.'));
     }
 }
