@@ -2,6 +2,7 @@
 if (!defined('ABSPATH')) exit;
 ?>
 <div class="wrap studio-wrap">
+<?php if(isset($_GET['report_sent'])):?><div class="notice notice-success is-dismissible"><p>Report PDF inviato con successo al commercialista.</p></div><?php endif;?>
     <div class="studio-header">
         <div>
             <h1>Esportazione Dati per il Commercialista</h1>
@@ -76,38 +77,16 @@ if (!defined('ABSPATH')) exit;
                     </button>
 
                     <button type="submit" name="studio_export_accountant_zip" class="btn-studio btn-studio-success" style="padding: 10px 16px;">
-                        &#128178; Scarica Pacchetto ZIP Completo (CSV + Tutte le Fatture HTML/PDF)
+                        &#128178; Scarica Pacchetto ZIP Completo (CSV + Tutte le Fatture PDF)
                     </button>
 
                     <button type="submit" formtarget="_blank" name="studio_export_accountant_summary" class="btn-studio btn-studio-secondary" style="padding: 10px 16px;">
-                        &#128462; Genera Report Stampabile di Riepilogo Periodico
+                        &#128462; Genera Report PDF di Riepilogo Periodico
                     </button>
-                    <button type="submit" name="studio_export_accountant_email" class="btn-studio btn-studio-success" style="padding:10px 16px;">Genera report e invia al commercialista</button>
+                    <button type="submit" name="studio_export_accountant_email" onclick="return confirm('Confermi l’invio del report PDF al commercialista?')" class="btn-studio btn-studio-success" style="padding:10px 16px;">Genera report e invia al commercialista</button>
                 </div>
             </form>
         </div>
 
-        <!-- Card 2: Informazioni per il Commercialista -->
-        <div class="studio-panel" style="background: #f8fafc;">
-            <h2>Cosa Contengono gli Export</h2>
-            <div style="font-size: 13px; line-height: 1.6; color: #334155;">
-                <p>Gli strumenti di esportazione sono predisposti specificamente per la compilazione del modello dei redditi, calcolo imposta forfettaria, liquidazioni periodiche e trasmissione <strong>Sistema Tessera Sanitaria (STS)</strong>.</p>
-
-                <h4 style="margin-bottom: 5px; color: #0f172a;">Nel file Excel/CSV:</h4>
-                <ul style="list-style-type: disc; margin-left: 20px;">
-                    <li>Numero progressivo e data fattura</li>
-                    <li>Dati anagrafici completi paziente (Nome, Cognome, Codice Fiscale, Comune di nascita e residenza)</li>
-                    <li>Totale imponibile prestazioni</li>
-                    <li>Quote cassa di previdenza sanitaria (es. ENPAP)</li>
-                    <li>Eventuale IVA applicata o indicazione esenzione sanitaria</li>
-                    <li>Marca da bollo assolta virtualmente</li>
-                    <li>Data incasso effettivo e metodo di pagamento per principio di cassa</li>
-                </ul>
-
-                <h4 style="margin-bottom: 5px; color: #0f172a; margin-top: 15px;">Nel Pacchetto ZIP:</h4>
-                <p>Include la cartella contenente ciascuna copia della fattura emessa nel periodo, perfettamente archiviata e pronta da allegare alla contabilità.</p>
-            </div>
-        </div>
-    </div>
 <div class="studio-panel"><h2>Log invii al commercialista</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Operatore</th><th>Destinatario</th><th>Periodo</th><th>Fatture</th><th>Oggetto</th></tr></thead><tbody><?php if($commercialista_logs):foreach($commercialista_logs as $l):$d=json_decode($l->dettagli,true);?><tr><td><?php echo esc_html(date_i18n('d/m/Y H:i',strtotime($l->data_evento)));?></td><td><?php echo esc_html($l->display_name);?></td><td><?php echo esc_html($d['destinatario']??'');?></td><td><?php echo esc_html($d['periodo']??'');?></td><td><?php echo esc_html($d['fatture']??'');?></td><td><?php echo esc_html($d['oggetto']??'');?></td></tr><?php endforeach;else:?><tr><td colspan="6">Nessun invio registrato.</td></tr><?php endif;?></tbody></table></div>
 </div>

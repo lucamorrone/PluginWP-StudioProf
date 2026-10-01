@@ -1,16 +1,20 @@
 <?php
 if (!defined('ABSPATH')) exit;
 $privacy_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=studio_privacy_pdf&id=' . $patient->id), 'studio_privacy_pdf_' . $patient->id);
+$privacy_email_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=studio_privacy_email&id=' . $patient->id), 'studio_privacy_email_' . $patient->id);
 $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=delete&id=' . $patient->id), 'studio_delete_patient_' . $patient->id);
 ?>
 <div class="wrap studio-wrap">
+<div id="studio-privacy-modal" class="studio-modal" style="display:none"><div class="studio-modal-card"><h2>Consenso privacy</h2><p>Scegli l’operazione da eseguire per il paziente.</p><div class="studio-actions"><a href="<?php echo esc_url($privacy_url);?>" target="_blank" class="btn-studio btn-studio-secondary">Stampa / Scarica PDF</a><a href="<?php echo esc_url($privacy_email_url);?>" class="btn-studio btn-studio-primary" onclick="return confirm('Inviare il consenso privacy a <?php echo esc_js($patient->email);?>?')">Invia via email</a><button type="button" class="btn-studio btn-studio-secondary" id="studio-close-privacy-modal">Annulla</button></div></div></div>
+
+    <?php if(isset($_GET['privacy_email_sent'])):?><div class="notice notice-success is-dismissible"><p>Consenso privacy inviato con successo e registrato nel log.</p></div><?php endif;?>
     <div class="studio-header">
         <div>
             <h1>Scheda Paziente: <?php echo esc_html($patient->cognome . ' ' . $patient->nome); ?></h1>
             <p class="description">Cartella clinica, storico sedute e situazione contabile.</p>
         </div>
         <div class="studio-actions">
-            <a href="<?php echo esc_url($privacy_url); ?>" target="_blank" class="btn-studio btn-studio-secondary">&#128462; Consenso Privacy PDF</a>
+            <button type="button" class="btn-studio btn-studio-secondary" id="studio-open-privacy-modal">&#128462; Consenso Privacy</button>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=new&patient_id=' . $patient->id)); ?>" class="btn-studio btn-studio-success">+ Nuova Fattura</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=edit&id=' . $patient->id)); ?>" class="btn-studio btn-studio-primary">&#9998; Modifica Anagrafica</a>
             <?php if(current_user_can(Studio_Roles::CAP_MANAGE_STUDIO) && $issued_invoice_count===0):?><a href="<?php echo esc_url($delete_url);?>" class="btn-studio btn-studio-danger" onclick="return confirm('Eliminare definitivamente il paziente e le eventuali bozze collegate?')">Elimina paziente</a><?php endif;?>

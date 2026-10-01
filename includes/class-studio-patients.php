@@ -26,6 +26,7 @@ class Studio_Patients {
         add_action('admin_init', array($this, 'handle_patient_delete'));
         add_action('admin_init', array($this, 'handle_patient_csv_import'));
         add_action('admin_init', array($this, 'handle_privacy_pdf_download'));
+        add_action('admin_init', array($this, 'handle_privacy_email_send'));
         add_action('admin_init', array($this, 'handle_clinical_documents'));
     }
 
@@ -363,6 +364,14 @@ class Studio_Patients {
         Studio_Security::audit('genera_consenso_privacy','paziente',$patient_id);
         Studio_PDF::output_privacy_pdf($patient_id);
         exit;
+    }
+
+    public function handle_privacy_email_send(){
+        if(!isset($_GET['action']) || $_GET['action']!=='studio_privacy_email' || empty($_GET['id']))return;
+        $patient_id=intval($_GET['id']);check_admin_referer('studio_privacy_email_'.$patient_id);if(!current_user_can(Studio_Roles::CAP_SEND_EMAILS))wp_die(__('Accesso negato.','studio-professionale'));
+        global $wpdb;$patient=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.Studio_DB::table('pazienti').' WHERE id=%d',$patient_id));if(!$patient||!is_email($patient->email))wp_die(__('Il paziente non ha un indirizzo email valido.','studio-professionale'));
+        $file=Studio_PDF::generate_privacy_pdf($patient_id);if(is_wp_error($file))wp_die($file->get_error_message());$studio=Studio_DB::get_studio_data();$subject='Consenso privacy da firmare - '.$patient->nome.' '.$patient->cognome;$body="Gentile {$patient->nome} {$patient->cognome},\n\nin allegato trova il modulo di consenso privacy. Le chiediamo di restituirlo firmato via email allegandolo alla presente o di stamparlo e consegnarlo allo studio.\n\nCordiali saluti,\n{$studio['professionista']}";$ok=wp_mail($patient->email,$subject,$body,array('From: '.$studio['professionista'].' <'.$studio['email'].'>'),array($file));if(!$ok)wp_die(__('Invio non riuscito. Verificare FluentSMTP.','studio-professionale'));
+        $details=array('destinatario'=>$patient->email,'oggetto'=>$subject,'file'=>basename($file));$wpdb->insert(Studio_DB::table('log'),array('paziente_id'=>$patient_id,'user_id'=>get_current_user_id(),'tipo'=>'invio_consenso_privacy','dettagli'=>wp_json_encode($details),'data_evento'=>current_time('mysql')));$wpdb->update(Studio_DB::table('pazienti'),array('consenso_privacy_generato'=>1,'consenso_privacy_data'=>current_time('mysql'),'consenso_privacy_utente'=>get_current_user_id()),array('id'=>$patient_id));Studio_Security::audit('invio_consenso_privacy','paziente',$patient_id,$details);wp_safe_redirect(admin_url('admin.php?page=studio-pazienti&action=view&id='.$patient_id.'&privacy_email_sent=1'));exit;
     }
 
     public function handle_clinical_documents(){

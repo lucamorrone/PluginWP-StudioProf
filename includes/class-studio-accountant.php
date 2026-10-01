@@ -195,7 +195,7 @@ class Studio_Accountant {
             // Assicura che il PDF/HTML esista
             $filepath = Studio_PDF::generate_invoice_pdf($r->id);
             if (file_exists($filepath)) {
-                $doc_name = 'Fattura_' . str_replace('/', '-', $r->codice_fattura) . '_' . sanitize_title($r->cognome . '_' . $r->nome) . '.html';
+                $doc_name = 'Fattura_' . str_replace('/', '-', $r->codice_fattura) . '_' . sanitize_title($r->cognome . '_' . $r->nome) . '.pdf';
                 $zip->addFile($filepath, 'Fatture/' . $doc_name);
             }
 
@@ -227,25 +227,12 @@ class Studio_Accountant {
     }
 
     public function handle_export_summary_pdf() {
-        if (!isset($_POST['studio_export_accountant_summary'])) {
-            return;
-        }
-
+        if (!isset($_POST['studio_export_accountant_summary'])) return;
         check_admin_referer('studio_export_accountant');
-
-        $anno = intval($_POST['export_anno']);
-        $periodo = sanitize_text_field($_POST['export_periodo']);
-        $custom_from = isset($_POST['custom_from']) ? sanitize_text_field($_POST['custom_from']) : '';
-        $custom_to = isset($_POST['custom_to']) ? sanitize_text_field($_POST['custom_to']) : '';
-
-        $records = $this->get_export_query($anno, $periodo, $custom_from, $custom_to);
-        $studio = Studio_DB::get_studio_data();
-
-        header('Content-Type: text/html; charset=utf-8');
-        include STUDIO_PROF_PATH . 'templates/report-accountant-html.php';
-        exit;
+        if (!current_user_can(Studio_Roles::CAP_MANAGE_INVOICES)) wp_die(__('Accesso non autorizzato.','studio-professionale'));
+        $anno=intval($_POST['export_anno']);$periodo=sanitize_text_field($_POST['export_periodo']);$from=sanitize_text_field($_POST['custom_from']??'');$to=sanitize_text_field($_POST['custom_to']??'');$records=$this->get_export_query($anno,$periodo,$from,$to);if(!$records)wp_die(__('Nessuna fattura emessa nel periodo selezionato.','studio-professionale'));
+        $file=$this->build_report_pdf($records,$anno,$this->period_label($periodo,$anno,$from,$to));header('Content-Type: application/pdf');header('Content-Disposition: inline; filename="Report_Fatture_'.sanitize_file_name($this->period_label($periodo,$anno,$from,$to)).'.pdf"');readfile($file);@unlink($file);exit;
     }
-
     private function period_label($periodo,$anno,$from='',$to=''){
         $labels=array('year'=>'Anno intero','q1'=>'1° trimestre','q2'=>'2° trimestre','q3'=>'3° trimestre','q4'=>'4° trimestre');
         $months=array(1=>'Gennaio',2=>'Febbraio',3=>'Marzo',4=>'Aprile',5=>'Maggio',6=>'Giugno',7=>'Luglio',8=>'Agosto',9=>'Settembre',10=>'Ottobre',11=>'Novembre',12=>'Dicembre');
@@ -255,13 +242,19 @@ class Studio_Accountant {
     }
     private function build_printable_report_html($records,$anno,$periodo){$studio=Studio_DB::get_studio_data();ob_start();include STUDIO_PROF_PATH.'templates/report-accountant-html.php';return ob_get_clean();}
     private function build_report_pdf($records,$anno,$periodo){
-        $studio=Studio_DB::get_studio_data();$pdf=new Studio_PDF_Engine();$pdf->text(38,38,'REPORT CONTABILE PERIODICO',18,true,'#0f172a');$pdf->text(38,62,$studio['denominazione'].' - '.$studio['professionista'],10,false,'#475569');$pdf->text(38,82,'Periodo: '.$periodo.' / '.$anno,10,true);$y=115;$tot=0;$paid=0;$pdf->line(38,$y,557,$y);$y+=20;foreach($records as $r){$pdf->text(38,$y,$r->codice_fattura,9,true);$pdf->text(105,$y,date_i18n('d/m/Y',strtotime($r->data_documento)),9);$pdf->text(180,$y,$r->cognome.' '.$r->nome,9);$pdf->text(390,$y,number_format($r->totale_documento,2,',','.').' EUR',9,true);$pdf->text(490,$y,$r->stato_pagamento==='pagata'?'Saldato':'Da pagare',8);$tot+=(float)$r->totale_documento;if($r->stato_pagamento==='pagata')$paid+=(float)$r->totale_documento;$y+=20;if($y>700)break;}$pdf->line(38,$y,557,$y);$pdf->text(300,$y+30,'Totale: '.number_format($tot,2,',','.').' EUR',11,true);$pdf->text(300,$y+50,'Incassato: '.number_format($paid,2,',','.').' EUR',10);$pdf->text(300,$y+70,'Da incassare: '.number_format($tot-$paid,2,',','.').' EUR',10);$file=wp_tempnam('report-commercialista-').'.pdf';file_put_contents($file,$pdf->output());return $file;
+        $studio=Studio_DB::get_studio_data();$pdf=new Studio_PDF_Engine('landscape');
+        $tot_imp=0;$tot_cassa=0;$tot_bollo=0;$tot_gen=0;$tot_paid=0;foreach($records as $r){$tot_imp+=(float)$r->totale_imponibile;$tot_cassa+=(float)$r->totale_cassa;$tot_bollo+=(float)$r->marca_bollo;$tot_gen+=(float)$r->totale_documento;if($r->stato_pagamento==='pagata')$tot_paid+=(float)$r->totale_documento;}
+        $pdf->text(28,30,'Riepilogo Fiscale Fatturato - Studio Professionale',16,true,'#000000');$pdf->text(28,49,'Professionista: '.$studio['professionista'].' ('.$studio['titolo'].') | P.IVA: '.$studio['partita_iva'],9,false,'#000000');$pdf->text(28,65,'Periodo: '.$periodo,9,true,'#000000');$pdf->color('#000000');$pdf->line(28,76,814,76);
+        $boxes=array('Documenti Emessi'=>count($records),'Totale Imponibile'=>number_format($tot_imp,2,',','.').' EUR','Cassa Previdenza'=>number_format($tot_cassa,2,',','.').' EUR','Bolli Applicati'=>number_format($tot_bollo,2,',','.').' EUR','Totale Generale'=>number_format($tot_gen,2,',','.').' EUR','Incassato Effettivo'=>number_format($tot_paid,2,',','.').' EUR');$x=28;foreach($boxes as $label=>$value){$pdf->rect($x,91,123,52,false);$pdf->text($x+7,108,$label,7,true,'#000000');$pdf->text($x+7,132,$value,11,true,'#000000');$x+=131;}
+        $y=165;$cols=array(array(28,58,'Numero'),array(86,52,'Data'),array(138,124,'Paziente'),array(262,105,'Codice Fiscale'),array(367,76,'Imponibile'),array(443,58,'Cassa'),array(501,48,'Bollo'),array(549,72,'Totale'),array(621,66,'Stato'),array(687,127,'Pagamento'));foreach($cols as $c){$pdf->rect($c[0],$y,$c[1],24,false);$pdf->text($c[0]+4,$y+16,$c[2],7,true,'#000000');}$y+=24;$shown=0;foreach($records as $r){if($y>520)break;$vals=array($r->codice_fattura,date_i18n('d/m/Y',strtotime($r->data_documento)),$r->cognome.' '.$r->nome,$r->codice_fiscale,number_format($r->totale_imponibile,2,',','.').' EUR',number_format($r->totale_cassa,2,',','.').' EUR',number_format($r->marca_bollo,2,',','.').' EUR',number_format($r->totale_documento,2,',','.').' EUR',$r->stato_pagamento==='pagata'?'Saldato':'Da pagare',$r->data_pagamento?date_i18n('d/m/Y',strtotime($r->data_pagamento)).' ('.$r->metodo_pagamento.')':'-');foreach($cols as $idx=>$c){$pdf->rect($c[0],$y,$c[1],22,false);$val=$vals[$idx];if(strlen($val)>22)$val=substr($val,0,20).'..';$pdf->text($c[0]+4,$y+14,$val,7,$idx===0||$idx===7,'#000000');}$y+=22;$shown++;}
+        if($shown<count($records))$pdf->text(28,558,'Nota: il dettaglio mostra le prime '.$shown.' fatture; i riquadri riepilogativi includono tutte le '.count($records).' fatture.',7,false,'#000000');
+        $file=wp_tempnam('report-fatture-').'.pdf';file_put_contents($file,$pdf->output());return $file;
     }
     public function handle_accountant_email_save(){if(!isset($_POST['studio_accountant_email_save']))return;check_admin_referer('studio_export_accountant');if(!current_user_can(Studio_Roles::CAP_MANAGE_STUDIO))wp_die('Solo un amministratore può modificare l’email del commercialista.');Studio_DB::update_setting('studio_commercialista_email',sanitize_email($_POST['commercialista_email']));wp_safe_redirect(admin_url('admin.php?page=studio-commercialista&email_saved=1'));exit;}
     public function handle_email_report(){
         if(!isset($_POST['studio_export_accountant_email']))return;check_admin_referer('studio_export_accountant');if(!current_user_can(Studio_Roles::CAP_MANAGE_INVOICES))wp_die('Accesso negato');
         global $wpdb;$anno=intval($_POST['export_anno']);$periodo=sanitize_text_field($_POST['export_periodo']);$from=sanitize_text_field($_POST['custom_from']??'');$to=sanitize_text_field($_POST['custom_to']??'');$records=$this->get_export_query($anno,$periodo,$from,$to);if(!$records)wp_die('Nessuna fattura emessa nel periodo selezionato.');
-        $email=sanitize_email(Studio_DB::get_setting('studio_commercialista_email'));if(!is_email($email))wp_die('Configura prima un indirizzo email valido del commercialista.');$label=$this->period_label($periodo,$anno,$from,$to);$html=$this->build_printable_report_html($records,$anno,$periodo);$file=wp_tempnam('report-fatture-').'.html';file_put_contents($file,$html);$studio=Studio_DB::get_studio_data();$count=count($records);$subject='Report Fatture - '.$label;$body="Gentile Professionista,\n\ntrasmettiamo in allegato il report delle fatture emesse relativo al periodo: {$label}.\n\nNumero totale di fatture emesse incluse nel report: {$count}.\n\nIl documento allegato corrisponde al report stampabile generato dall'applicazione.\n\nCordiali saluti,\n{$studio['professionista']}";$ok=wp_mail($email,$subject,$body,array('From: '.$studio['professionista'].' <'.$studio['email'].'>'),array($file));@unlink($file);if(!$ok)wp_die('Invio non riuscito. Verifica FluentSMTP.');
-        $details=array('destinatario'=>$email,'oggetto'=>$subject,'periodo'=>$label,'fatture'=>$count);$wpdb->insert(Studio_DB::table('log'),array('user_id'=>get_current_user_id(),'tipo'=>'invio_report_commercialista','dettagli'=>wp_json_encode($details),'data_evento'=>current_time('mysql')));Studio_Security::audit('invio_report_commercialista','report',0,$details);wp_safe_redirect(admin_url('admin.php?page=studio-commercialista&report_sent=1'));exit;
+        $email=sanitize_email(Studio_DB::get_setting('studio_commercialista_email'));if(!is_email($email))wp_die('Configura prima un indirizzo email valido del commercialista.');$label=$this->period_label($periodo,$anno,$from,$to);$file=$this->build_report_pdf($records,$anno,$label);$studio=Studio_DB::get_studio_data();$count=count($records);$subject='Report Fatture - '.$label;$body="Gentile Professionista,\n\ntrasmettiamo in allegato il report PDF delle fatture emesse relativo al periodo: {$label}.\n\nNumero totale di fatture emesse incluse nel report: {$count}.\n\nCordiali saluti,\n{$studio['professionista']}";$ok=wp_mail($email,$subject,$body,array('From: '.$studio['professionista'].' <'.$studio['email'].'>'),array($file));@unlink($file);if(!$ok)wp_die('Invio non riuscito. Verifica FluentSMTP.');
+        $details=array('destinatario'=>$email,'oggetto'=>$subject,'periodo'=>$label,'fatture'=>$count,'formato'=>'PDF');$wpdb->insert(Studio_DB::table('log'),array('user_id'=>get_current_user_id(),'tipo'=>'invio_report_commercialista','dettagli'=>wp_json_encode($details),'data_evento'=>current_time('mysql')));Studio_Security::audit('invio_report_commercialista','report',0,$details);wp_safe_redirect(admin_url('admin.php?page=studio-commercialista&report_sent=1'));exit;
     }
 }

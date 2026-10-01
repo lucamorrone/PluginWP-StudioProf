@@ -3,6 +3,11 @@
 
     $(document).ready(function() {
 
+
+        $('#studio-open-privacy-modal').on('click', function(){ $('#studio-privacy-modal').css('display','flex').hide().fadeIn(120); });
+        $('#studio-close-privacy-modal, #studio-privacy-modal').on('click', function(e){ if (e.target === this) $('#studio-privacy-modal').fadeOut(120); });
+        $('.studio-modal-card').on('click', function(e){ e.stopPropagation(); });
+
         // 1. Calcolo automatico dati anagrafici dal Codice Fiscale
         const $cfInput = $('#studio_codice_fiscale');
         if ($cfInput.length) {
@@ -142,7 +147,7 @@
             const totaleRitenuta = (imponibileTotale * (ritenutaPerc / 100));
 
             let totaleBollo = 0;
-            if (forzaBollo || (imponibileTotale > bolloSoglia)) {
+            if (forzaBollo) {
                 totaleBollo = bolloValore;
             }
 
@@ -231,6 +236,11 @@
             } else {
                 $('#custom_dates_wrapper').hide();
             }
+        });
+
+
+        $(document).on('click', 'button[name="studio_export_accountant_email"]', function(e) {
+            if (!confirm('Confermi la generazione e l’invio del report PDF al commercialista?')) { e.preventDefault(); }
         });
 
         // Inizializza calcoli al caricamento se nella pagina form fattura

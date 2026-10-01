@@ -206,7 +206,7 @@ class Studio_Invoices {
         // Bollo: applicabile se supera la soglia di legge (77.47€) e previsto
         $applica_bollo = isset($_POST['applica_marca_bollo']) ? intval($_POST['applica_marca_bollo']) : 0;
         $marca_bollo = 0.00;
-        if ($applica_bollo || ($totale_imponibile > $studio['marca_bollo_soglia'])) {
+        if ($applica_bollo) {
             $marca_bollo = $studio['marca_bollo'];
         }
 

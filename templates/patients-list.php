@@ -62,7 +62,7 @@ if ($notice) {
                                 <?php endif; ?>
                             </td>
                             <td><code><?php echo esc_html($p->codice_fiscale); ?></code></td>
-                            <td><?php echo $p->data_nascita ? date('d/m/Y', strtotime($p->data_nascita)) : '-'; ?></td>
+                            <td><?php if($p->data_nascita){$birth=new DateTime($p->data_nascita);$today=new DateTime(current_time('Y-m-d'));$age=$birth->diff($today)->y;echo esc_html(date_i18n('d/m/Y',strtotime($p->data_nascita)).' ('.$age.' anni)');}else{echo '-';} ?></td>
                             <td>
                                 <?php if (!empty($p->telefono)): ?><div>&#128222; <?php echo esc_html($p->telefono); ?></div><?php endif; ?>
                                 <?php if (!empty($p->email)): ?><div>&#9993; <?php echo esc_html($p->email); ?></div><?php endif; ?>
