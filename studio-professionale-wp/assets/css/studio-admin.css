@@ -1,0 +1,290 @@
+/* Studio Professionale Admin CSS */
+:root {
+    --studio-primary: #2563eb;
+    --studio-primary-hover: #1d4ed8;
+    --studio-success: #16a34a;
+    --studio-danger: #dc2626;
+    --studio-warning: #d97706;
+    --studio-bg: #f8fafc;
+    --studio-card-border: #e2e8f0;
+    --studio-text: #0f172a;
+    --studio-muted: #64748b;
+}
+
+.studio-wrap {
+    margin: 20px 20px 0 2px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--studio-text);
+}
+
+.studio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--studio-card-border);
+}
+
+.studio-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--studio-text);
+}
+
+.studio-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Card & Grid */
+.studio-grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.studio-card-stat {
+    background: #fff;
+    border: 1px solid var(--studio-card-border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.studio-card-stat .title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--studio-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.studio-card-stat .value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--studio-text);
+}
+
+.studio-card-stat.highlight {
+    border-left: 4px solid var(--studio-primary);
+}
+
+.studio-card-stat.success {
+    border-left: 4px solid var(--studio-success);
+}
+
+.studio-card-stat.warning {
+    border-left: 4px solid var(--studio-warning);
+}
+
+/* Pannelli */
+.studio-panel {
+    background: #fff;
+    border: 1px solid var(--studio-card-border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.studio-panel h2 {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 18px;
+    color: var(--studio-text);
+    border-bottom: 1px solid var(--studio-card-border);
+    padding-bottom: 10px;
+}
+
+/* Form Layouts */
+.studio-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.studio-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.studio-field label {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: var(--studio-text);
+}
+
+.studio-field input[type="text"],
+.studio-field input[type="email"],
+.studio-field input[type="number"],
+.studio-field input[type="date"],
+.studio-field select,
+.studio-field textarea {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+.studio-field input:focus,
+.studio-field select:focus,
+.studio-field textarea:focus {
+    border-color: var(--studio-primary);
+    box-shadow: 0 0 0 1px var(--studio-primary);
+    outline: none;
+}
+
+.studio-field .desc {
+    font-size: 11px;
+    color: var(--studio-muted);
+    margin-top: 4px;
+}
+
+/* Bottoni personalizzati */
+.btn-studio {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-studio-primary {
+    background: var(--studio-primary);
+    color: #fff !important;
+}
+
+.btn-studio-primary:hover {
+    background: var(--studio-primary-hover);
+}
+
+.btn-studio-success {
+    background: var(--studio-success);
+    color: #fff !important;
+}
+
+.btn-studio-success:hover {
+    background: #15803d;
+}
+
+.btn-studio-danger {
+    background: var(--studio-danger);
+    color: #fff !important;
+}
+
+.btn-studio-secondary {
+    background: #fff;
+    border-color: #cbd5e1;
+    color: var(--studio-text) !important;
+}
+
+.btn-studio-secondary:hover {
+    background: #f1f5f9;
+}
+
+/* Badge Stati */
+.studio-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.badge-draft { background: #fef3c7; color: #92400e; }
+.badge-issued { background: #e0e7ff; color: #3730a3; }
+.badge-paid { background: #dcfce7; color: #166534; }
+.badge-unpaid { background: #fee2e2; color: #991b1b; }
+
+/* Tabella righe dinamiche fattura */
+.invoice-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.invoice-items-table th {
+    background: #f1f5f9;
+    padding: 10px;
+    font-size: 12px;
+    text-align: left;
+    border: 1px solid var(--studio-card-border);
+}
+
+.invoice-items-table td {
+    padding: 8px;
+    border: 1px solid var(--studio-card-border);
+}
+
+.invoice-totals-box {
+    max-width: 380px;
+    margin-left: auto;
+    background: #f8fafc;
+    border: 1px solid var(--studio-card-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.invoice-totals-box .row-tot {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.invoice-totals-box .row-tot.grand {
+    font-size: 16px;
+    font-weight: 800;
+    border-top: 2px solid #cbd5e1;
+    padding-top: 8px;
+    margin-top: 8px;
+    color: var(--studio-primary);
+}
+
+/* Tab Scheda Paziente */
+.studio-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--studio-card-border);
+    margin-bottom: 20px;
+}
+
+.studio-tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--studio-muted);
+    border-bottom: 2px solid transparent;
+}
+
+.studio-tab-btn.active {
+    color: var(--studio-primary);
+    border-bottom-color: var(--studio-primary);
+}
+
+.studio-tab-content {
+    display: none;
+}
+
+.studio-tab-content.active {
+    display: block;
+}
+.studio-year-filter{display:flex;align-items:center;gap:8px;margin-left:auto}.studio-year-filter select{min-width:100px}.tablenav-pages{margin:16px 0}.tablenav-pages .page-numbers{display:inline-block;padding:6px 10px;border:1px solid #cbd5e1;background:#fff;text-decoration:none}.tablenav-pages .current{background:#2563eb;color:#fff}
+
+.studio-modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100000;display:flex;align-items:center;justify-content:center}.studio-modal-card{background:#fff;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:26px;max-width:520px;width:calc(100% - 40px)}
