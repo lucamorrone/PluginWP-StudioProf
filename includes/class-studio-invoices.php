@@ -204,7 +204,7 @@ class Studio_Invoices {
         $totale_ritenuta = round($totale_imponibile * ($ritenuta_perc / 100), 2);
 
         // Bollo: applicabile se supera la soglia di legge (77.47€) e previsto
-        $applica_bollo = isset($_POST['applica_marca_bollo']) ? intval($_POST['applica_marca_bollo']) : 0;
+        $applica_bollo = !empty($_POST['applica_marca_bollo']) && (string)$_POST['applica_marca_bollo'] !== '0';
         $marca_bollo = 0.00;
         if ($applica_bollo) {
             $marca_bollo = $studio['marca_bollo'];
@@ -336,16 +336,17 @@ class Studio_Invoices {
     }
 
     public function handle_invoice_delete() {
-        if (!isset($_GET['action']) || $_GET['action'] !== 'delete' || !isset($_GET['id'])) {
-            return;
-        }
+        $is_post = isset($_POST['studio_delete_invoice']);
+        $action = $is_post ? 'delete' : (isset($_GET['action']) ? sanitize_key($_GET['action']) : '');
+        $id = $is_post ? intval($_POST['invoice_id'] ?? 0) : intval($_GET['id'] ?? 0);
+        if ($action !== 'delete' || !$id) return;
 
         if (!current_user_can(Studio_Roles::CAP_MANAGE_STUDIO)) {
             wp_die(__('Solo gli amministratori possono cancellare una bozza.', 'studio-professionale'));
         }
 
-        $id = intval($_GET['id']);
-        check_admin_referer('studio_delete_invoice_' . $id);
+        if ($is_post) check_admin_referer('studio_delete_invoice_' . $id, 'studio_delete_invoice_nonce');
+        else check_admin_referer('studio_delete_invoice_' . $id);
 
         global $wpdb;
         $t_fatture = Studio_DB::table('fatture');

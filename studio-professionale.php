@@ -3,7 +3,7 @@
  * Plugin Name: Studio Professionale - Gestione Pazienti & Fatturazione
  * Plugin URI: https://github.com/lucamorrone/PluginWP-StudioProf
  * Description: Sistema avanzato per la gestione anagrafica pazienti, storico visite/anamnesi, fatturazione con calcolo automatico, pagamenti, esportazione commercialista e generazione PDF.
- * Version: 2.2.3
+ * Version: 2.2.4
  * Author: Luca Morrone, AI Antigravity e Copilot
  * Text Domain: studio-professionale
  * Domain Path: /languages
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Costanti del Plugin
-define('STUDIO_PROF_VERSION', '2.2.3');
+define('STUDIO_PROF_VERSION', '2.2.4');
 define('STUDIO_PROF_PATH', plugin_dir_path(__FILE__));
 define('STUDIO_PROF_URL', plugin_dir_url(__FILE__));
 define('STUDIO_PROF_BASENAME', plugin_basename(__FILE__));

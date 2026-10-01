@@ -10,7 +10,7 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
     <?php if(isset($_GET['privacy_email_sent'])):?><div class="notice notice-success is-dismissible"><p>Consenso privacy inviato con successo e registrato nel log.</p></div><?php endif;?>
     <div class="studio-header">
         <div>
-            <h1>Scheda Paziente: <?php echo esc_html($patient->cognome . ' ' . $patient->nome); ?></h1>
+            <h1>Scheda Paziente: <?php echo esc_html($patient->cognome . ' ' . $patient->nome . ($patient_age!=='' ? ' ('.$patient_age.')' : '')); ?></h1>
             <p class="description">Cartella clinica, storico sedute e situazione contabile.</p>
         </div>
         <div class="studio-actions">

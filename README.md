@@ -99,3 +99,10 @@ studio-professionale-wp/
   - **File CSV / Excel:** Dati completi di tutte le fatture emesse con imponibile, cassa, bolli, data incasso e dati anagrafici completi dei pazienti (per compilazione dichiarazione e modello 730/Redditi/Tessera Sanitaria).
   - **Pacchetto ZIP:** Archivio contenente sia il CSV riepilogativo sia tutte le copie dei documenti di spesa sanitaria emessi nel periodo.
   - **Report Fiscale di Riepilogo:** Riepilogo stampabile da allegare al fascicolo contabile.
+
+### 2.2.4
+- Dashboard con dettaglio maschi/femmine ed emesse/bozze.
+- Import CSV robusto: controllo CF, normalizzazione date e telefoni, errori dettagliati.
+- Export CSV anagrafiche ed eta nella scheda paziente.
+- Correzione eliminazione bozze e persistenza bollo.
+- Report commercialista multipagina con tutte le fatture e colonna IVA.

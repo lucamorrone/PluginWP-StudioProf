@@ -12,13 +12,14 @@ if ($notice) {
             <p class="description">Elenco completo dei pazienti in cura, cartelle cliniche e contabilità associata.</p>
         </div>
         <div class="studio-actions">
+            <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=export_csv'),'studio_export_patients_csv')); ?>" class="btn-studio btn-studio-success">&#128229; Export CSV</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=import')); ?>" class="btn-studio btn-studio-secondary">&#128196; Importa CSV</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=new')); ?>" class="btn-studio btn-studio-primary">+ Nuovo Paziente</a>
         </div>
     </div>
 
     <?php if ($notice): ?>
-        <div class="notice notice-info is-dismissible" style="margin-left: 0;">
+        <div class="notice notice-info is-dismissible studio-import-errors" style="margin-left: 0;">
             <p><?php echo esc_html($notice); ?></p>
         </div>
     <?php endif; ?>

@@ -25,6 +25,7 @@ class Studio_Patients {
         add_action('admin_init', array($this, 'handle_patient_save'));
         add_action('admin_init', array($this, 'handle_patient_delete'));
         add_action('admin_init', array($this, 'handle_patient_csv_import'));
+        add_action('admin_init', array($this, 'handle_patient_csv_export'));
         add_action('admin_init', array($this, 'handle_privacy_pdf_download'));
         add_action('admin_init', array($this, 'handle_privacy_email_send'));
         add_action('admin_init', array($this, 'handle_clinical_documents'));
@@ -103,6 +104,7 @@ class Studio_Patients {
         $documenti = current_user_can(Studio_Roles::CAP_MANAGE_DOCUMENTS) ? $wpdb->get_results($wpdb->prepare('SELECT d.*,u.display_name FROM '.Studio_DB::table('documenti').' d LEFT JOIN '.$wpdb->users.' u ON u.ID=d.caricato_da WHERE d.paziente_id=%d ORDER BY d.id DESC',$patient_id)) : array();
         $email_logs = $wpdb->get_results($wpdb->prepare('SELECT l.*,u.display_name FROM '.Studio_DB::table('log').' l LEFT JOIN '.$wpdb->users.' u ON u.ID=l.user_id WHERE l.paziente_id=%d ORDER BY l.id DESC',$patient_id));
         $can_view_clinical = current_user_can(Studio_Roles::CAP_VIEW_CLINICAL);
+        $patient_age='';if(!empty($patient->data_nascita)&&$patient->data_nascita!=='0000-00-00'){try{$bd=new DateTime($patient->data_nascita);$today=new DateTime(current_time('Y-m-d'));if($bd<=$today)$patient_age=$bd->diff($today)->y;}catch(Exception $e){$patient_age='';}}
         $issued_invoice_count=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_fatture WHERE paziente_id=%d AND stato='emessa'",$patient_id));
         // Riepilogo contabile
         $totale_fatturato = 0.00;
@@ -236,115 +238,17 @@ class Studio_Patients {
         exit;
     }
 
-    public function handle_patient_csv_import() {
-        if (!isset($_POST['studio_import_csv_nonce'])) {
-            return;
-        }
-
-        if (!wp_verify_nonce($_POST['studio_import_csv_nonce'], 'studio_import_csv')) {
-            wp_die(__('Errore di sicurezza.', 'studio-professionale'));
-        }
-
-        if (!current_user_can(Studio_Roles::CAP_EDIT_PATIENTS)) {
-            wp_die(__('Permessi insufficienti.', 'studio-professionale'));
-        }
-
-        if (empty($_FILES['csv_file']['tmp_name'])) {
-            wp_die(__('Carica un file CSV valido.', 'studio-professionale'));
-        }
-
-        $file = $_FILES['csv_file']['tmp_name'];
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            wp_die(__('Impossibile aprire il file caricato.', 'studio-professionale'));
-        }
-
-        global $wpdb;
-        $table = Studio_DB::table('pazienti');
-        $delimiter = sanitize_text_field($_POST['csv_delimiter']);
-        if (empty($delimiter)) $delimiter = ',';
-
-        // Legge prima riga come intestazione
-        $headers = fgetcsv($handle, 4096, $delimiter);
-        if (!$headers) {
-            fclose($handle);
-            wp_die(__('File CSV vuoto o malformato.', 'studio-professionale'));
-        }
-
-        // Normalizza headers
-        $clean_headers = array_map(function($h) {
-            return strtolower(trim(str_replace(array(' ', '_', '-'), '', $h)));
-        }, $headers);
-
-        $inserted = 0;
-        $errors = array();
-        $row_idx = 1;
-
-        while (($row = fgetcsv($handle, 4096, $delimiter)) !== FALSE) {
-            $row_idx++;
-            $row_data = array_combine($clean_headers, array_pad($row, count($clean_headers), ''));
-            
-            $nome = isset($row_data['nome']) ? sanitize_text_field($row_data['nome']) : '';
-            $cognome = isset($row_data['cognome']) ? sanitize_text_field($row_data['cognome']) : '';
-            $cf = isset($row_data['codicefiscale']) ? strtoupper(sanitize_text_field(str_replace(' ', '', $row_data['codicefiscale']))) : '';
-            if (empty($cf) && isset($row_data['cf'])) {
-                $cf = strtoupper(sanitize_text_field(str_replace(' ', '', $row_data['cf'])));
-            }
-
-            if (empty($nome) || empty($cognome)) {
-                $errors[] = "Riga $row_idx: Nome o cognome mancante.";
-                continue;
-            }
-
-            // Decodifica CF automatica se data di nascita assente
-            $data_nascita = isset($row_data['datanascita']) ? sanitize_text_field($row_data['datanascita']) : null;
-            $sesso = isset($row_data['sesso']) ? strtoupper(sanitize_text_field($row_data['sesso'])) : '';
-            if (!empty($cf) && strlen($cf) === 16 && empty($data_nascita)) {
-                $decoded = self::calculate_from_cf($cf);
-                if ($decoded) {
-                    $data_nascita = $decoded['data_nascita'];
-                    if (empty($sesso)) $sesso = $decoded['sesso'];
-                }
-            }
-
-            $csv_patient_data = array(
-                'nome'                => $nome,
-                'cognome'             => $cognome,
-                'codice_fiscale'      => $cf,
-                'sesso'               => $sesso,
-                'luogo_nascita'       => isset($row_data['luogonascita']) ? sanitize_text_field($row_data['luogonascita']) : '',
-                'provincia_nascita'   => isset($row_data['provincianascita']) ? strtoupper(sanitize_text_field($row_data['provincianascita'])) : '',
-                'stato_nascita'       => isset($row_data['statonascita']) ? sanitize_text_field($row_data['statonascita']) : 'Italia',
-                'telefono'            => isset($row_data['telefono']) ? sanitize_text_field($row_data['telefono']) : (isset($row_data['cellulare']) ? sanitize_text_field($row_data['cellulare']) : ''),
-                'email'               => isset($row_data['email']) ? sanitize_email($row_data['email']) : '',
-                'indirizzo_residenza' => isset($row_data['indirizzo']) ? sanitize_text_field($row_data['indirizzo']) : '',
-                'citta_residenza'     => isset($row_data['citta']) ? sanitize_text_field($row_data['citta']) : '',
-                'cap_residenza'       => isset($row_data['cap']) ? sanitize_text_field($row_data['cap']) : '',
-                'provincia_residenza' => isset($row_data['provincia']) ? strtoupper(sanitize_text_field($row_data['provincia'])) : '',
-                'note'                => isset($row_data['note']) ? sanitize_textarea_field($row_data['note']) : '',
-                'data_creazione'      => current_time('mysql'),
-                'data_aggiornamento'  => current_time('mysql')
-            );
-            if (!empty($data_nascita)) {
-                $csv_patient_data['data_nascita'] = $data_nascita;
-            }
-
-            $wpdb->insert($table, $csv_patient_data);
-
-            if ($wpdb->insert_id) {
-                $inserted++;
-            }
-        }
-        fclose($handle);
-
-        $msg = "Importati con successo $inserted pazienti.";
-        if (!empty($errors)) {
-            $msg .= " Errori riscontrati in " . count($errors) . " righe.";
-        }
-
-        set_transient('studio_import_notice', $msg, 60);
-        wp_redirect(add_query_arg(array('page' => 'studio-pazienti', 'import_done' => '1'), admin_url('admin.php')));
-        exit;
+    private static function normalize_csv_date($value){$value=trim((string)$value);if($value==='')return null;$formats=array('Y-m-d','d/m/Y','d-m-Y','Y/m/d');foreach($formats as $format){$d=DateTime::createFromFormat('!'.$format,$value);$errors=DateTime::getLastErrors();if($d && ($errors===false || ($errors['warning_count']===0 && $errors['error_count']===0)))return $d->format('Y-m-d');}return false;}
+    private static function normalize_csv_phone($value){$value=trim((string)$value);if($value==='')return '';$normalized=str_replace(array(' ','.'),'',str_replace(',','.',$value));if(preg_match('/^[+]?\d+(?:\.\d+)?[Ee][+]?\d+$/',$normalized)){$number=(float)$normalized;$value=number_format($number,0,'','');}return preg_replace('/[^0-9+()\/-]/','',$value);}
+    public function handle_patient_csv_export(){if(!isset($_GET['action'])||$_GET['action']!=='export_csv')return;if(!current_user_can(Studio_Roles::CAP_VIEW_PATIENTS))wp_die(__('Accesso negato.','studio-professionale'));check_admin_referer('studio_export_patients_csv');global $wpdb;$rows=$wpdb->get_results('SELECT * FROM '.Studio_DB::table('pazienti').' ORDER BY cognome,nome');header('Content-Type: text/csv; charset=utf-8');header('Content-Disposition: attachment; filename="Pazienti_'.date('Ymd_His').'.csv"');$out=fopen('php://output','w');fputs($out,"\xEF\xBB\xBF");fputcsv($out,array('Cognome','Nome','CodiceFiscale','Telefono','Email','Indirizzo','CAP','Citta','Provincia','DataNascita','LuogoNascita','ProvinciaNascita','StatoNascita','Sesso','Note'),';');foreach($rows as $r)fputcsv($out,array($r->cognome,$r->nome,$r->codice_fiscale,$r->telefono,$r->email,$r->indirizzo_residenza,$r->cap_residenza,$r->citta_residenza,$r->provincia_residenza,$r->data_nascita,$r->luogo_nascita,$r->provincia_nascita,$r->stato_nascita,$r->sesso,$r->note),';');fclose($out);exit;}
+    public function handle_patient_csv_import(){
+        if(!isset($_POST['studio_import_csv_nonce']))return;if(!wp_verify_nonce($_POST['studio_import_csv_nonce'],'studio_import_csv'))wp_die(__('Errore di sicurezza.','studio-professionale'));if(!current_user_can(Studio_Roles::CAP_EDIT_PATIENTS))wp_die(__('Permessi insufficienti.','studio-professionale'));if(empty($_FILES['csv_file']['tmp_name']))wp_die(__('Carica un file CSV valido.','studio-professionale'));
+        $handle=fopen($_FILES['csv_file']['tmp_name'],'r');if(!$handle)wp_die(__('Impossibile aprire il file.','studio-professionale'));global $wpdb;$table=Studio_DB::table('pazienti');$delimiter=sanitize_text_field($_POST['csv_delimiter']??';');if($delimiter==='TAB')$delimiter="\t";
+        do{$headers=fgetcsv($handle,8192,$delimiter);}while($headers!==false && count(array_filter($headers,'strlen'))===0);if(!$headers){fclose($handle);wp_die(__('File CSV vuoto.','studio-professionale'));}$headers[0]=preg_replace('/^\xEF\xBB\xBF/','',$headers[0]);$clean=array_map(function($h){return strtolower(trim(str_replace(array(' ','_','-'),'',$h)));},$headers);$required=array('cognome','nome');foreach($required as $req)if(!in_array($req,$clean,true))wp_die('Intestazione obbligatoria mancante: '.$req.'. Separatore selezionato non corretto o file non compatibile.');
+        $inserted=0;$errors=array();$row_idx=1;$seen=array();while(($row=fgetcsv($handle,8192,$delimiter))!==false){$row_idx++;if(count(array_filter($row,'strlen'))===0)continue;if(count($row)!==count($clean)){$errors[]="Riga $row_idx: numero colonne (".count($row).") diverso dalle intestazioni (".count($clean).").";continue;}$d=array_combine($clean,$row);$nome=sanitize_text_field($d['nome']??'');$cognome=sanitize_text_field($d['cognome']??'');$cf=strtoupper(preg_replace('/\s+/','',sanitize_text_field($d['codicefiscale']??($d['cf']??''))));if($nome===''||$cognome===''){$errors[]="Riga $row_idx: nome o cognome mancante.";continue;}if(!self::is_valid_cf($cf)){$errors[]="Riga $row_idx: Codice Fiscale non valido ($cf).";continue;}if(isset($seen[$cf])){$errors[]="Riga $row_idx: Codice Fiscale duplicato nel CSV ($cf), già presente alla riga {$seen[$cf]}.";continue;}$seen[$cf]=$row_idx;$existing=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE codice_fiscale=%s LIMIT 1",$cf));if($existing){$errors[]="Riga $row_idx: Codice Fiscale già presente nel database ($cf, ID $existing).";continue;}
+            $birth=self::normalize_csv_date($d['datanascita']??'');if($birth===false){$errors[]="Riga $row_idx: data di nascita non valida. Usare AAAA-MM-GG oppure GG/MM/AAAA.";continue;}$sex=strtoupper(sanitize_text_field($d['sesso']??''));if(!$birth){$decoded=self::calculate_from_cf($cf);if($decoded){$birth=$decoded['data_nascita'];if(!$sex)$sex=$decoded['sesso'];}}$phone=self::normalize_csv_phone($d['telefono']??($d['cellulare']??''));$email=sanitize_email($d['email']??'');if(!$phone){$errors[]="Riga $row_idx: telefono mancante o non valido.";continue;}if(!$email||!is_email($email)){$errors[]="Riga $row_idx: email mancante o non valida.";continue;}
+            $data=array('nome'=>$nome,'cognome'=>$cognome,'codice_fiscale'=>$cf,'sesso'=>$sex,'data_nascita'=>$birth,'luogo_nascita'=>sanitize_text_field($d['luogonascita']??''),'provincia_nascita'=>strtoupper(sanitize_text_field($d['provincianascita']??'')),'stato_nascita'=>sanitize_text_field($d['statonascita']??'Italia'),'telefono'=>$phone,'email'=>$email,'indirizzo_residenza'=>sanitize_text_field($d['indirizzo']??''),'citta_residenza'=>sanitize_text_field($d['citta']??''),'cap_residenza'=>sanitize_text_field($d['cap']??''),'provincia_residenza'=>strtoupper(sanitize_text_field($d['provincia']??'')),'note'=>sanitize_textarea_field($d['note']??''),'data_creazione'=>current_time('mysql'),'data_aggiornamento'=>current_time('mysql'));if(!$wpdb->insert($table,$data)){$errors[]="Riga $row_idx: errore database - ".$wpdb->last_error;continue;}$inserted++;}
+        fclose($handle);$msg="Importati con successo $inserted pazienti.";if($errors)$msg.="\nErrori (".count($errors)."):\n- ".implode("\n- ",$errors);set_transient('studio_import_notice',$msg,300);wp_safe_redirect(admin_url('admin.php?page=studio-pazienti&import_done=1'));exit;
     }
 
     public function handle_privacy_pdf_download() {

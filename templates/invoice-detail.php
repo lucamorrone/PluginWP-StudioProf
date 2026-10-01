@@ -25,7 +25,7 @@ $msg = isset($_GET['msg']) ? sanitize_text_field($_GET['msg']) : '';
             <?php if ($invoice->stato === 'bozza'): ?>
                 <a href="<?php echo esc_url($issue_url); ?>" class="btn-studio btn-studio-success btn-confirm-issue">&#10004; Emetti Fattura</a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=edit&id=' . $invoice->id)); ?>" class="btn-studio btn-studio-secondary">&#9998; Modifica</a>
-                <a href="<?php echo esc_url($delete_url); ?>" class="btn-studio btn-studio-danger" onclick="return confirm('Sei sicuro di voler eliminare questa bozza?');">&#128465; Elimina Bozza</a>
+                <form method="post" style="display:inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa bozza?');"><?php wp_nonce_field('studio_delete_invoice_'.$invoice->id,'studio_delete_invoice_nonce');?><input type="hidden" name="invoice_id" value="<?php echo (int)$invoice->id;?>"><button type="submit" name="studio_delete_invoice" class="btn-studio btn-studio-danger">&#128465; Elimina Bozza</button></form>
             <?php else: ?>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=edit&id=' . $invoice->id)); ?>" class="btn-studio btn-studio-secondary">Aggiorna Pagamento</a>
             <?php endif; ?>

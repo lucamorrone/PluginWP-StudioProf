@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class Studio_Activator {
 
-    const DB_VERSION = '2.2.3';
+    const DB_VERSION = '2.2.4';
 
     public static function activate() {
         self::create_tables();
