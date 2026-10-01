@@ -7,11 +7,18 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-fatture&action=delet
 
 $msg = isset($_GET['msg']) ? sanitize_text_field($_GET['msg']) : '';
 ?>
+<?php
+$effective_bollo = Studio_Invoices::get_effective_stamp_duty($invoice, $studio);
+$effective_totale = max(0, round((float)$invoice->totale_imponibile + (float)$invoice->totale_cassa + (float)$invoice->totale_iva + $effective_bollo - (float)$invoice->totale_ritenuta, 2));
+$invoice->marca_bollo = $effective_bollo;
+$invoice->totale_documento = $effective_totale;
+?>
+
 <div class="wrap studio-wrap">
     <div class="studio-header">
         <div>
             <h1>
-                <?php echo ($invoice->stato === 'emessa') ? 'Fattura N. ' . esc_html($invoice->codice_fattura) : 'Bozza Fattura #' . esc_html($invoice->id); ?>
+                <?php echo ($invoice->stato === 'emessa') ? 'Fattura N. ' . esc_html($invoice->codice_fattura) : 'Proforma #' . esc_html($invoice->id); ?>
             </h1>
             <p class="description">Dettaglio documento fiscale, stato saldi, anteprima di stampa ed invio al paziente.</p>
         </div>
@@ -25,7 +32,7 @@ $msg = isset($_GET['msg']) ? sanitize_text_field($_GET['msg']) : '';
             <?php if ($invoice->stato === 'bozza'): ?>
                 <a href="<?php echo esc_url($issue_url); ?>" class="btn-studio btn-studio-success btn-confirm-issue">&#10004; Emetti Fattura</a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=edit&id=' . $invoice->id)); ?>" class="btn-studio btn-studio-secondary">&#9998; Modifica</a>
-                <form method="post" style="display:inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa bozza?');"><?php wp_nonce_field('studio_delete_invoice_'.$invoice->id,'studio_delete_invoice_nonce');?><input type="hidden" name="invoice_id" value="<?php echo (int)$invoice->id;?>"><button type="submit" name="studio_delete_invoice" class="btn-studio btn-studio-danger">&#128465; Elimina Bozza</button></form>
+                <form method="post" style="display:inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa bozza?');"><?php wp_nonce_field('studio_delete_invoice_'.$invoice->id,'studio_delete_invoice_nonce');?><input type="hidden" name="invoice_id" value="<?php echo (int)$invoice->id;?>"><button name="studio_delete_invoice" class="btn-studio btn-studio-danger">&#128465; Elimina Bozza</button></form>
             <?php else: ?>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=edit&id=' . $invoice->id)); ?>" class="btn-studio btn-studio-secondary">Aggiorna Pagamento</a>
             <?php endif; ?>
@@ -132,7 +139,7 @@ $msg = isset($_GET['msg']) ? sanitize_text_field($_GET['msg']) : '';
                         <span><?php echo number_format($invoice->totale_iva, 2, ',', '.'); ?> &euro;</span>
                     </div>
                 <?php endif; ?>
-                <?php if ($invoice->marca_bollo > 0): ?>
+                <?php if (!empty($invoice->applica_marca_bollo) || (float)$invoice->marca_bollo > 0): ?>
                     <div class="row-tot">
                         <span>Marca da Bollo:</span>
                         <span><?php echo number_format($invoice->marca_bollo, 2, ',', '.'); ?> &euro;</span>

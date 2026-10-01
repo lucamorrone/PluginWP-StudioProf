@@ -26,6 +26,25 @@ class Studio_Invoices {
         add_action('wp_ajax_studio_update_payment_status', array($this, 'ajax_update_payment_status'));
     }
 
+    public static function get_effective_stamp_duty($invoice, $studio = null) {
+        if (empty($invoice->applica_marca_bollo)) return 0.00;
+        if ($studio === null) $studio = Studio_DB::get_studio_data();
+        $configured = isset($studio['marca_bollo']) ? round((float)$studio['marca_bollo'], 2) : 0.00;
+        $stored = isset($invoice->marca_bollo) ? round((float)$invoice->marca_bollo, 2) : 0.00;
+        if ($configured > 0) return $configured;
+        if ($stored > 0) return $stored;
+        return 2.00;
+    }
+    public static function sync_stamp_duty($invoice_id) {
+        global $wpdb;
+        $table=Studio_DB::table('fatture');
+        $invoice=$wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d",$invoice_id));
+        if(!$invoice) return false;
+        $bollo=self::get_effective_stamp_duty($invoice);
+        $total=max(0,round((float)$invoice->totale_imponibile+(float)$invoice->totale_cassa+(float)$invoice->totale_iva+$bollo-(float)$invoice->totale_ritenuta,2));
+        $ok=$wpdb->update($table,array('marca_bollo'=>$bollo,'totale_documento'=>$total),array('id'=>$invoice_id),array('%f','%f'),array('%d'));
+        return $ok!==false;
+    }
     public function render_invoices_page() {
         $action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : 'list';
         $invoice_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -108,6 +127,7 @@ class Studio_Invoices {
 
     public function render_invoice_detail($invoice_id) {
         global $wpdb;
+        self::sync_stamp_duty($invoice_id);
         $t_fatture = Studio_DB::table('fatture');
         $t_pazienti = Studio_DB::table('pazienti');
         $t_righe = Studio_DB::table('fatture_righe');
@@ -204,7 +224,7 @@ class Studio_Invoices {
         $totale_ritenuta = round($totale_imponibile * ($ritenuta_perc / 100), 2);
 
         // Bollo: applicabile se supera la soglia di legge (77.47€) e previsto
-        $applica_bollo = !empty($_POST['applica_marca_bollo']) && (string)$_POST['applica_marca_bollo'] !== '0';
+        $applica_bollo = isset($_POST['applica_marca_bollo']) && (string)wp_unslash($_POST['applica_marca_bollo']) === '1' ? 1 : 0;
         $marca_bollo = 0.00;
         if ($applica_bollo) {
             $marca_bollo = $studio['marca_bollo'];
@@ -242,6 +262,7 @@ class Studio_Invoices {
             'totale_iva'           => $totale_iva,
             'percentuale_ritenuta' => $ritenuta_perc,
             'totale_ritenuta'      => $totale_ritenuta,
+            'applica_marca_bollo' => $applica_bollo,
             'marca_bollo'          => $marca_bollo,
             'totale_documento'     => $totale_documento,
             'stato_pagamento'      => $stato_pagamento,
@@ -257,7 +278,8 @@ class Studio_Invoices {
             if (empty($data_pagamento)) {
                 $wpdb->query($wpdb->prepare("UPDATE $table_fatture SET data_pagamento = NULL WHERE id = %d", $invoice_id));
             }
-            $wpdb->update($table_fatture, $invoice_data, array('id' => $invoice_id));
+            $saved=$wpdb->update($table_fatture,$invoice_data,array('id'=>$invoice_id));
+            if($saved===false) wp_die(__('Errore nel salvataggio della fattura: ','studio-professionale').esc_html($wpdb->last_error));
             $target_id = $invoice_id;
             // Elimina vecchie righe e reinserisce
             $wpdb->delete($table_righe, array('fattura_id' => $invoice_id));
@@ -272,6 +294,7 @@ class Studio_Invoices {
             $rd['fattura_id'] = $target_id;
             $wpdb->insert($table_righe, $rd);
         }
+        self::sync_stamp_duty($target_id);
 
         // Se l'utente ha premuto "Salva ed Emetti Subito"
         if (isset($_POST['submit_and_issue'])) {
@@ -311,6 +334,8 @@ class Studio_Invoices {
             return false;
         }
 
+        self::sync_stamp_duty($invoice_id);
+        $invoice = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $invoice_id));
         $anno = !empty($invoice->data_documento) ? intval(date('Y', strtotime($invoice->data_documento))) : intval(date('Y'));
 
         // Trova prossimo progressivo per quest'anno
@@ -336,17 +361,13 @@ class Studio_Invoices {
     }
 
     public function handle_invoice_delete() {
-        $is_post = isset($_POST['studio_delete_invoice']);
-        $action = $is_post ? 'delete' : (isset($_GET['action']) ? sanitize_key($_GET['action']) : '');
-        $id = $is_post ? intval($_POST['invoice_id'] ?? 0) : intval($_GET['id'] ?? 0);
-        if ($action !== 'delete' || !$id) return;
+        $is_post=isset($_POST['studio_delete_invoice']);$action=$is_post?'delete':sanitize_key($_GET['action']??'');$id=$is_post?intval($_POST['invoice_id']??0):intval($_GET['id']??0);if($action!=='delete'||!$id)return;
 
         if (!current_user_can(Studio_Roles::CAP_MANAGE_STUDIO)) {
             wp_die(__('Solo gli amministratori possono cancellare una bozza.', 'studio-professionale'));
         }
 
-        if ($is_post) check_admin_referer('studio_delete_invoice_' . $id, 'studio_delete_invoice_nonce');
-        else check_admin_referer('studio_delete_invoice_' . $id);
+        if($is_post)check_admin_referer('studio_delete_invoice_'.$id,'studio_delete_invoice_nonce');else check_admin_referer('studio_delete_invoice_'.$id);
 
         global $wpdb;
         $t_fatture = Studio_DB::table('fatture');
@@ -433,7 +454,8 @@ class Studio_Invoices {
             'data_pagamento'   => $data_pagamento
         ), array('id' => $invoice_id));
 
-        // Rigenera PDF
+        self::sync_stamp_duty($invoice_id);
+        // Rigenera PDF dopo la sincronizzazione del bollo e del totale
         Studio_PDF::generate_invoice_pdf($invoice_id);
 
         wp_send_json_success(array(

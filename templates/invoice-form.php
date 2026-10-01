@@ -166,7 +166,7 @@ $is_locked = ($is_edit && $invoice->stato === 'emessa');
                         <div class="studio-field" style="display: flex; align-items: flex-start; justify-content: center; padding-top: 20px;">
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                 <input type="hidden" name="applica_marca_bollo" value="0">
-                                <input type="checkbox" name="applica_marca_bollo" id="fattura_applica_bollo" value="1" <?php checked($is_edit ? ($invoice->marca_bollo > 0) : true); ?> <?php disabled($is_locked); ?>>
+                                <input type="checkbox" name="applica_marca_bollo" id="fattura_applica_marca_bollo" value="1" <?php checked($is_edit ? (int)($invoice->applica_marca_bollo ?? ($invoice->marca_bollo > 0)) : 1, 1); ?> <?php disabled($is_locked); ?>>
                                 <span>Marca da Bollo (2 &euro;)</span>
                             </label>
                         </div>

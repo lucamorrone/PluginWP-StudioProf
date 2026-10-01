@@ -139,7 +139,7 @@
             const ritenutaPerc = parseFloat($('#fattura_ritenuta_perc').val()) || 0;
             const bolloValore = parseFloat($('#fattura_bollo_valore').val()) || 2.00;
             const bolloSoglia = parseFloat($('#fattura_bollo_soglia').val()) || 77.47;
-            const forzaBollo = $('#fattura_applica_bollo').is(':checked');
+            const forzaBollo = $('#fattura_applica_marca_bollo').is(':checked');
 
             const totaleCassa = (imponibileTotale * (cassaPerc / 100));
             const imponibileIvabile = imponibileTotale + totaleCassa;
@@ -162,7 +162,7 @@
         }
 
         // Listener modifiche riga fattura
-        $(document).on('input change', '.item-qta, .item-prezzo, .item-sconto, #fattura_cassa_perc, #fattura_iva_perc, #fattura_ritenuta_perc, #fattura_applica_bollo', function() {
+        $(document).on('input change', '.item-qta, .item-prezzo, .item-sconto, #fattura_cassa_perc, #fattura_iva_perc, #fattura_ritenuta_perc, #fattura_applica_marca_bollo', function() {
             ricalcolaTotaliFattura();
         });
 
@@ -251,3 +251,14 @@
     });
 
 })(jQuery);
+
+/* Responsive enhancement v2.2.7: visual wrappers only */
+jQuery(function($){
+    $('.studio-wrap table').each(function(){
+        var $table=$(this);
+        if(!$table.parent().hasClass('studio-table-scroll')){
+            $table.wrap('<div class="studio-table-scroll" role="region" aria-label="Tabella scorrevole" tabindex="0"></div>');
+            $table.parent().before('<p class="studio-mobile-hint">Scorri orizzontalmente per visualizzare tutte le colonne.</p>');
+        }
+    });
+});

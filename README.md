@@ -100,9 +100,14 @@ studio-professionale-wp/
   - **Pacchetto ZIP:** Archivio contenente sia il CSV riepilogativo sia tutte le copie dei documenti di spesa sanitaria emessi nel periodo.
   - **Report Fiscale di Riepilogo:** Riepilogo stampabile da allegare al fascicolo contabile.
 
-### 2.2.4
-- Dashboard con dettaglio maschi/femmine ed emesse/bozze.
-- Import CSV robusto: controllo CF, normalizzazione date e telefoni, errori dettagliati.
-- Export CSV anagrafiche ed eta nella scheda paziente.
-- Correzione eliminazione bozze e persistenza bollo.
-- Report commercialista multipagina con tutte le fatture e colonna IVA.
+
+### Versione 2.2.5
+- Correzione definitiva della persistenza della marca da bollo mediante campo database dedicato.
+
+
+### Versione 2.2.6
+- Sincronizzazione definitiva del bollo in tutte le pagine, emissione, PDF ed export.
+
+
+### Versione 2.2.7
+- Interfaccia responsive per smartphone e tablet, senza modifiche alla logica applicativa.

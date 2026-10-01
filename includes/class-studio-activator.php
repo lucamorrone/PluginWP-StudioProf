@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class Studio_Activator {
 
-    const DB_VERSION = '2.2.4';
+    const DB_VERSION = '2.2.7';
 
     public static function activate() {
         self::create_tables();
@@ -102,6 +102,7 @@ class Studio_Activator {
             totale_iva decimal(10,2) DEFAULT 0.00,
             percentuale_ritenuta decimal(5,2) DEFAULT 0.00,
             totale_ritenuta decimal(10,2) DEFAULT 0.00,
+            applica_marca_bollo tinyint(1) NOT NULL DEFAULT 0,
             marca_bollo decimal(10,2) DEFAULT 0.00,
             totale_documento decimal(10,2) NOT NULL DEFAULT 0.00,
             stato_pagamento varchar(20) DEFAULT 'da_pagare',

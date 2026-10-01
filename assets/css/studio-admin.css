@@ -288,5 +288,85 @@
 .studio-year-filter{display:flex;align-items:center;gap:8px;margin-left:auto}.studio-year-filter select{min-width:100px}.tablenav-pages{margin:16px 0}.tablenav-pages .page-numbers{display:inline-block;padding:6px 10px;border:1px solid #cbd5e1;background:#fff;text-decoration:none}.tablenav-pages .current{background:#2563eb;color:#fff}
 
 .studio-modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100000;display:flex;align-items:center;justify-content:center}.studio-modal-card{background:#fff;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:26px;max-width:520px;width:calc(100% - 40px)}
+.studio-stat-sub{margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px}
 
-.studio-stat-sub{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px}.studio-import-errors{white-space:pre-line;max-height:320px;overflow:auto}.studio-age{font-weight:500;color:#64748b}
+/* ==========================================================
+   Responsive mobile/tablet - v2.2.7
+   Solo presentazione: nessuna modifica alla logica applicativa
+   ========================================================== */
+.studio-table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+.studio-table-scroll>table{margin-bottom:0}
+.studio-mobile-hint{display:none;color:#64748b;font-size:12px;margin:0 0 8px}
+
+@media (max-width: 1024px){
+  .studio-wrap{max-width:none;margin-right:12px}
+  .studio-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .studio-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .studio-header{align-items:flex-start;gap:14px}
+  .studio-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+  .invoice-items-table{min-width:780px}
+}
+
+@media (max-width: 782px){
+  #wpcontent{padding-left:0}
+  .studio-wrap{margin:12px 10px 28px;max-width:none}
+  .studio-header{display:block;margin-bottom:16px}
+  .studio-header h1{font-size:22px;line-height:1.2;margin:0 0 7px}
+  .studio-header p{font-size:13px;margin-bottom:12px}
+  .studio-actions{justify-content:flex-start;width:100%}
+  .studio-actions .btn-studio,.studio-actions button,.studio-actions form{flex:1 1 145px}
+  .studio-actions form .btn-studio,.studio-actions form button{width:100%}
+  .btn-studio,.studio-wrap button,.studio-wrap input[type=submit]{min-height:42px;padding:10px 13px;line-height:20px;text-align:center;white-space:normal}
+
+  .studio-stats-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .studio-stat-card{padding:14px;min-width:0}
+  .studio-stat-card .value{font-size:24px}
+  .studio-stat-sub{display:block;line-height:1.7}
+
+  .studio-panel{padding:16px;margin-bottom:14px;overflow:hidden}
+  .studio-panel h2,.studio-panel h3{line-height:1.3}
+  .studio-form-grid{grid-template-columns:1fr!important;gap:14px}
+  .studio-field{min-width:0}
+  .studio-field input[type=text],.studio-field input[type=email],.studio-field input[type=tel],.studio-field input[type=number],.studio-field input[type=date],.studio-field input[type=datetime-local],.studio-field input[type=password],.studio-field select,.studio-field textarea{width:100%;max-width:none;min-height:44px;font-size:16px;box-sizing:border-box}
+  .studio-field textarea{min-height:110px}
+  .studio-field label{margin-bottom:6px}
+
+  .studio-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px;gap:6px}
+  .studio-tab-btn{flex:0 0 auto;min-height:44px;white-space:nowrap}
+
+  .studio-table-scroll{margin:0 -2px 8px;padding-bottom:5px}
+  .studio-mobile-hint{display:block}
+  .studio-wrap table{min-width:680px}
+  .studio-wrap table.invoice-items-table{min-width:820px}
+  .studio-wrap th,.studio-wrap td{padding:9px 8px;font-size:12px}
+  .studio-wrap td .btn-studio,.studio-wrap td button{min-height:36px;padding:7px 9px}
+
+  .invoice-totals-box{max-width:none;margin-left:0;width:auto;padding:14px}
+  .invoice-totals-box .row-tot{font-size:14px;gap:12px}
+  .invoice-totals-box .row-tot span:last-child{text-align:right;white-space:nowrap}
+
+  .studio-detail-grid,.studio-info-grid,.studio-cards-grid{grid-template-columns:1fr!important}
+  .studio-badge{white-space:nowrap}
+  .notice{margin:10px 0}
+  .tablenav{height:auto}
+  .tablenav .alignleft,.tablenav .alignright{float:none;width:100%;margin:0 0 8px}
+  .tablenav-pages{float:none!important;margin:8px 0!important;text-align:left}
+}
+
+@media (max-width: 480px){
+  .studio-wrap{margin-left:8px;margin-right:8px}
+  .studio-stats-grid{grid-template-columns:1fr}
+  .studio-stat-card{display:block}
+  .studio-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .studio-actions .btn-studio,.studio-actions button,.studio-actions form{width:100%;min-width:0}
+  .studio-actions>*:only-child{grid-column:1/-1}
+  .studio-panel{padding:13px;border-radius:8px}
+  .studio-wrap table{min-width:640px}
+  .studio-wrap table.invoice-items-table{min-width:780px}
+  .invoice-totals-box .row-tot.grand{font-size:15px}
+}
+
+@media (hover:none) and (pointer:coarse){
+  .studio-wrap a,.studio-wrap button,.studio-wrap input,.studio-wrap select,.studio-wrap textarea{touch-action:manipulation}
+  .studio-wrap input[type=checkbox],.studio-wrap input[type=radio]{width:20px;height:20px}
+}

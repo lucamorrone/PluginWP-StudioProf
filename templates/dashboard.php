@@ -18,11 +18,11 @@ if (!defined('ABSPATH')) exit;
     <div class="studio-grid-cards">
         <div class="studio-card-stat highlight">
             <div class="title">Totale Pazienti</div>
-            <div class="value"><?php echo esc_html($tot_pazienti); ?></div><div class="studio-stat-sub"><span>Maschi: <strong><?php echo (int)$tot_maschi;?></strong></span><span>Femmine: <strong><?php echo (int)$tot_femmine;?></strong></span></div>
+            <div class="value"><?php echo esc_html($tot_pazienti); ?></div><div class="studio-stat-sub">Maschi: <strong><?php echo (int)$tot_maschi;?></strong> &nbsp; Femmine: <strong><?php echo (int)$tot_femmine;?></strong></div>
         </div>
         <div class="studio-card-stat">
             <div class="title">Fatture Gestite</div>
-            <div class="value"><?php echo esc_html($tot_fatture); ?></div><div class="studio-stat-sub"><span>Emesse: <strong><?php echo (int)$fatture_emesse;?></strong></span><span>In bozza: <strong><?php echo (int)$fatture_bozza;?></strong></span></div>
+            <div class="value"><?php echo esc_html($tot_fatture); ?></div><div class="studio-stat-sub">Emesse: <strong><?php echo (int)$fatture_emesse;?></strong> &nbsp; In bozza: <strong><?php echo (int)$fatture_bozza;?></strong></div>
         </div>
         <div class="studio-card-stat success">
             <div class="title">Incassato Anno <?php echo esc_html($anno_corrente); ?></div>
