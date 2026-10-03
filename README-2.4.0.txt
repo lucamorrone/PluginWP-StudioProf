@@ -1,0 +1,11 @@
+Versione 2.4.0 - Prima release PWA
+- URL applicazione: /studio-app/
+- Login dedicato e WordPress nascosto alla professionista.
+- Dashboard mobile, ricerca pazienti e scheda paziente.
+- Profilo Clinico e Anamnesi modificabili.
+- Storico sedute e inserimento nuova seduta.
+- Documenti e contabilità in sola lettura.
+- Manifest, icone installabili e service worker.
+- Nessuna cache locale dei dati clinici o fiscali.
+- API REST protette da cookie, nonce e capability.
+- Compatibile con hosting Linux Aruba e HTTPS.

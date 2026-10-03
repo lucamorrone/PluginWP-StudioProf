@@ -80,7 +80,7 @@ class Studio_DB {
             'fatture'       => self::table('fatture'),
             'fatture_righe' => self::table('fatture_righe'),
             'impostazioni'  => self::table('impostazioni'),
-            'documenti'=>self::table('documenti'),'log'=>self::table('log'),'audit'=>self::table('audit'),
+            'documenti'=>self::table('documenti'),'log'=>self::table('log'),'audit'=>self::table('audit'),'profili_clinici'=>self::table('profili_clinici'),
         );
         $status = array();
         foreach ($tables as $key => $table_name) {

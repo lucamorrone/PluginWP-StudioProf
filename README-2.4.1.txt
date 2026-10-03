@@ -1,0 +1,15 @@
+Versione 2.4.1 - UX/UI e operativita PWA
+- Nuova interfaccia Fluent responsive per smartphone, tablet e desktop.
+- Header con denominazione studio e Partita IVA.
+- Dashboard con totale pazienti, maschi e femmine.
+- Elenco pazienti con data di nascita ed eta.
+- Scheda paziente migliorata con recapiti, Profilo Clinico, Anamnesi, Sedute, Documenti e Contabilita.
+- Anamnesi senza duplicazione del Profilo Clinico.
+- Creazione, modifica ed eliminazione sedute dalla PWA con audit.
+- Upload e download documenti PDF protetti.
+- Riepilogo contabile paziente con fatturato, pagato e residuo.
+- Contabilita generale per anno con emesse, bozze, incassato e da incassare.
+- Dettaglio fattura e Proforma in sola lettura.
+- Gestione centralizzata degli errori e nessun caricamento infinito.
+- Dati clinici e fiscali esclusi dalla cache offline.
+- Hotfix callback REST pubbliche incluso.

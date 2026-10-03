@@ -212,6 +212,9 @@ $repair_url = wp_nonce_url(admin_url('admin.php?page=studio-impostazioni&action=
             <input type="submit" name="studio_settings_submit" class="btn-studio btn-studio-primary" value="Salva Impostazioni Studio" style="padding: 10px 24px; font-size: 15px;">
         </div>
     </form>
+<h2>🧠 Vocabolario Profilo Clinico</h2><p>Modifica categorie, colori e tag disponibili nel Profilo Clinico. Inserisci una voce per riga.</p><form method="post"><?php wp_nonce_field('studio_save_clinical_vocabulary'); ?><input type="hidden" name="studio_save_clinical_vocabulary" value="1"><div id="clinical-vocabulary-settings"><?php foreach(Studio_Clinical_Profile::vocabulary() as $i=>$cc): ?><div class="studio-panel" style="padding:14px"><div class="studio-form-grid"><div class="studio-field"><label>Categoria</label><input name="clinical_category_name[]" value="<?php echo esc_attr($cc['name']); ?>"></div><div class="studio-field"><label>Colore</label><input type="color" name="clinical_category_color[]" value="<?php echo esc_attr($cc['color']); ?>"></div></div><div class="studio-field"><label>Voci, una per riga</label><textarea rows="5" name="clinical_category_items[]"><?php echo esc_textarea(implode("
+",$cc['items'])); ?></textarea></div></div><?php endforeach; ?></div><button class="btn-studio btn-studio-primary" type="submit">Salva vocabolario clinico</button></form><hr style="margin:28px 0">
+
 </div>
 
 <script>

@@ -35,7 +35,9 @@ class Studio_Patients {
         $action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : 'list';
         $patient_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        if ($action === 'view' && $patient_id > 0) {
+        if ($action === 'clinical_profile' && $patient_id > 0) {
+            Studio_Clinical_Profile::get_instance()->render($patient_id);
+        } elseif ($action === 'view' && $patient_id > 0) {
             $this->render_patient_detail($patient_id);
         } elseif ($action === 'edit' || $action === 'new') {
             $this->render_patient_form($patient_id);
@@ -104,6 +106,8 @@ class Studio_Patients {
         $documenti = current_user_can(Studio_Roles::CAP_MANAGE_DOCUMENTS) ? $wpdb->get_results($wpdb->prepare('SELECT d.*,u.display_name FROM '.Studio_DB::table('documenti').' d LEFT JOIN '.$wpdb->users.' u ON u.ID=d.caricato_da WHERE d.paziente_id=%d ORDER BY d.id DESC',$patient_id)) : array();
         $email_logs = $wpdb->get_results($wpdb->prepare('SELECT l.*,u.display_name FROM '.Studio_DB::table('log').' l LEFT JOIN '.$wpdb->users.' u ON u.ID=l.user_id WHERE l.paziente_id=%d ORDER BY l.id DESC',$patient_id));
         $can_view_clinical = current_user_can(Studio_Roles::CAP_VIEW_CLINICAL);
+        $clinical_profile = $can_view_clinical ? Studio_Clinical_Profile::get($patient_id) : array();
+        $clinical_categories = Studio_Clinical_Profile::vocabulary();
         $patient_age='';if(!empty($patient->data_nascita)&&$patient->data_nascita!=='0000-00-00'){try{$bd=new DateTime($patient->data_nascita);$today=new DateTime(current_time('Y-m-d'));if($bd<=$today)$patient_age=$bd->diff($today)->y;}catch(Exception $e){}}
         $issued_invoice_count=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_fatture WHERE paziente_id=%d AND stato='emessa'",$patient_id));
         // Riepilogo contabile
@@ -231,6 +235,7 @@ class Studio_Patients {
         $wpdb->delete(Studio_DB::table('fatture'),array('paziente_id'=>$id));
         $wpdb->delete(Studio_DB::table('visite'),array('paziente_id'=>$id));
         $wpdb->delete(Studio_DB::table('documenti'),array('paziente_id'=>$id));
+        $wpdb->delete(Studio_DB::table('profili_clinici'),array('paziente_id'=>$id));
         $wpdb->delete(Studio_DB::table('pazienti'),array('id'=>$id));
         Studio_Security::audit('eliminazione_anagrafica','paziente',$id);
 

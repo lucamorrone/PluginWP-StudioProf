@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class Studio_Activator {
 
-    const DB_VERSION = '2.2.7';
+    const DB_VERSION = '2.4.3';
 
     public static function activate() {
         self::create_tables();
@@ -147,6 +147,8 @@ class Studio_Activator {
         $sql_documenti = "CREATE TABLE $table_documenti (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,paziente_id bigint(20) unsigned NOT NULL,nome_file varchar(255) NOT NULL,percorso varchar(500) NOT NULL,mime varchar(100) DEFAULT 'application/pdf',descrizione varchar(255) DEFAULT '',caricato_da bigint(20) unsigned DEFAULT NULL,data_caricamento datetime NOT NULL,PRIMARY KEY (id),KEY paziente_id (paziente_id)) $charset_collate;";
         $table_log = $wpdb->prefix . 'studio_log';
         $sql_log = "CREATE TABLE $table_log (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,paziente_id bigint(20) unsigned DEFAULT NULL,fattura_id bigint(20) unsigned DEFAULT NULL,user_id bigint(20) unsigned DEFAULT NULL,tipo varchar(60) NOT NULL,dettagli longtext,data_evento datetime NOT NULL,PRIMARY KEY (id),KEY paziente_id (paziente_id),KEY fattura_id (fattura_id),KEY data_evento (data_evento)) $charset_collate;";
+        $table_profili = $wpdb->prefix . 'studio_profili_clinici';
+        $sql_profili = "CREATE TABLE $table_profili (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,paziente_id bigint(20) unsigned NOT NULL,profilo_json longtext,utente_modifica bigint(20) unsigned DEFAULT NULL,data_creazione datetime DEFAULT NULL,data_aggiornamento datetime DEFAULT NULL,PRIMARY KEY (id),UNIQUE KEY paziente_id (paziente_id)) $charset_collate;";
         $table_audit = $wpdb->prefix . 'studio_audit';
         $sql_audit = "CREATE TABLE $table_audit (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,user_id bigint(20) unsigned DEFAULT NULL,azione varchar(80) NOT NULL,oggetto varchar(80) DEFAULT '',oggetto_id bigint(20) unsigned DEFAULT NULL,dettagli longtext,ip_hash varchar(64) DEFAULT '',data_evento datetime NOT NULL,PRIMARY KEY (id),KEY oggetto_id (oggetto_id),KEY data_evento (data_evento)) $charset_collate;";
 
@@ -162,6 +164,7 @@ class Studio_Activator {
         dbDelta($sql_documenti);
         dbDelta($sql_log);
         dbDelta($sql_audit);
+        dbDelta($sql_profili);
 
         // 2. Fallback diretto con CREATE TABLE IF NOT EXISTS per MySQL 5.0+
         $tables = array(
@@ -172,6 +175,7 @@ class Studio_Activator {
             'documenti'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_documenti),
             'log'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_log),
             'audit'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_audit),
+            'profili_clinici'=>str_replace('CREATE TABLE ','CREATE TABLE IF NOT EXISTS ',$sql_profili),
             'impostazioni' => str_replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ', $sql_impostazioni),
         );
 
@@ -195,7 +199,9 @@ class Studio_Activator {
         if (!file_exists($studio_dir)) {
             wp_mkdir_p($studio_dir);
             file_put_contents($studio_dir . '/index.php', '<?php // Silence is golden.');
-            file_put_contents($studio_dir . '/.htaccess', "Options -Indexes\n");
         }
+        if (!file_exists($studio_dir . '/index.php')) file_put_contents($studio_dir . '/index.php', '<?php // Silence is golden.');
+        $protection = "Options -Indexes\n\n<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n\n<IfModule !mod_authz_core.c>\n    Order Allow,Deny\n    Deny from all\n</IfModule>\n";
+        file_put_contents($studio_dir . '/.htaccess', $protection);
     }
 }

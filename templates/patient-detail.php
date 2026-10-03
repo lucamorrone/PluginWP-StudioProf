@@ -15,6 +15,7 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
         </div>
         <div class="studio-actions">
             <button type="button" class="btn-studio btn-studio-secondary" id="studio-open-privacy-modal">&#128462; Consenso Privacy</button>
+            <?php if($can_view_clinical): ?><a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=clinical_profile&id='.$patient->id)); ?>" class="btn-studio btn-studio-primary">🧠 Inserisci / Modifica Profilo Clinico</a><?php endif; ?>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-fatture&action=new&patient_id=' . $patient->id)); ?>" class="btn-studio btn-studio-success">+ Nuova Fattura</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=edit&id=' . $patient->id)); ?>" class="btn-studio btn-studio-primary">&#9998; Modifica Anagrafica</a>
             <?php if(current_user_can(Studio_Roles::CAP_MANAGE_STUDIO) && $issued_invoice_count===0):?><a href="<?php echo esc_url($delete_url);?>" class="btn-studio btn-studio-danger" onclick="return confirm('Eliminare definitivamente il paziente e le eventuali bozze collegate?')">Elimina paziente</a><?php endif;?>
@@ -61,6 +62,42 @@ $delete_url = wp_nonce_url(admin_url('admin.php?page=studio-pazienti&action=dele
     <!-- TAB 1: ANAMNESI -->
     <?php if($can_view_clinical): ?><div class="studio-tab-content active" id="tab-anamnesi">
         <div class="studio-panel">
+            <?php if ($can_view_clinical) : ?>
+            <section class="clinical-profile-overview" aria-labelledby="clinical-profile-overview-title">
+                <div class="clinical-profile-overview-header">
+                    <h2 id="clinical-profile-overview-title">🧠 Profilo Clinico</h2>
+                    <a class="clinical-profile-edit-link" href="<?php echo esc_url(admin_url('admin.php?page=studio-pazienti&action=clinical_profile&id=' . $patient->id)); ?>">Modifica profilo</a>
+                </div>
+                <?php
+                $clinical_summary = array();
+                foreach ($clinical_categories as $clinical_category) {
+                    $category_id = isset($clinical_category['id']) ? $clinical_category['id'] : '';
+                    if ($category_id === '' || empty($clinical_profile[$category_id]) || !is_array($clinical_profile[$category_id])) {
+                        continue;
+                    }
+                    $profile_values = array_values(array_filter(array_map('sanitize_text_field', $clinical_profile[$category_id])));
+                    if (empty($profile_values)) {
+                        continue;
+                    }
+                    $clinical_summary[] = array(
+                        'name'   => isset($clinical_category['name']) ? $clinical_category['name'] : $category_id,
+                        'values' => $profile_values,
+                    );
+                }
+                ?>
+                <?php if (!empty($clinical_summary)) : ?>
+                    <div class="clinical-summary-inline">
+                        <?php foreach ($clinical_summary as $clinical_index => $clinical_item) : ?>
+                            <?php if ($clinical_index > 0) : ?><span class="clinical-summary-separator" aria-hidden="true"> – </span><?php endif; ?>
+                            <span class="clinical-summary-item"><strong><?php echo esc_html($clinical_item['name']); ?>:</strong> <em><?php echo esc_html(implode(', ', $clinical_item['values'])); ?></em></span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else : ?>
+                    <p class="clinical-summary-empty">Nessun profilo clinico compilato.</p>
+                <?php endif; ?>
+            </section>
+            <?php endif; ?>
+
             <h2>Anamnesi e Storia Clinica del Paziente</h2>
             <p class="description">Spazio riservato per la formulazione del caso clinico, diagnosi, obiettivi terapeutici e note riservate protette da segreto professionale.</p>
             
